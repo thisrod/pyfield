@@ -3,17 +3,25 @@ Field library
 
 by Rodney E. S. Polkinghorne
 
-A field is a scalar, vector or tensor that depends on position and time.  The `Field` exported by this Python library is an `ndarray` containing samples of a field, that also records the points in R<sup>n</sup> at which the samples were taken.  Such an array can integrate, differentiate and Fourier transform itself, generate samples of white noise at its points, and so on.  The library aims to remove the accidental complexity from computing with fields, in order to spare scientific programers from bookeeping, to prevent large classes of bugs from occuring at all, and to allow the remaining code to address physical problems, and the remaining bugs to be removed by physical nous.
+A field is a scalar, vector or tensor quantity that depends on position and time.  This Python library exports a type `Field`, an `ndarray` containing samples of an array-valued quantity, that also records the points at which the samples were taken.  These points form a rectangular grid in R<sup>n</sup>.  Such an array can integrate, differentiate and Fourier transform itself, generate samples of white noise at its points, and so on.
+
+The library aims to remove the accidental complexity from computing with fields, in order to spare scientific programers from bookeeping, to prevent large classes of bugs from occuring at all, and to allow the remaining code to address physical problems, and the remaining bugs to be removed by physical nous.
+
+The current version of the library assumes that the quantity being sampled is an array, which is invariant as the coordinates change underneath it.  Future versions might understand how the components of vectors and tensors should transform in different coordinate systems.  
+
+
+Grids
+---
 
 The mechanics of this are done by a class `Grid`.  This is a abstract representation of a rectangular grid of points in R<sup>n</sup>, along with a system of grid coordinates.  The points must form a rectangular grid, but this does not have to be aligned with the usual axes or start at the origin.  We can represent a skew plane in space, and things like that.
 
-At `Grid` is constructed from its axes, as
+At `Grid` is usually constructed from its axes, as
 
-	R = Grid(0.1*arange(3), pi+0.5*arange(4))
+	R = Grid.from_axes(0.1*arange(3), pi+0.5*arange(4))
 
 An array of coodinates for all grid points in R<sup>n</sup> is given by
 
-	R.R()
+	R.W()
 
 and coordinates for the point with a known index, say `(1, 2)`, by
 
@@ -128,3 +136,7 @@ Things to change
 It would be nice to use the fielab idea, where subscripts in parentheses refer to coordinates and those in brackets refer to indices.  In Python, however, we can't use slice syntax in function calls, so that wouldn't be practical.  Users should refer to coordinates far more often than they refer to indices, so subscripts should be grid coordinates.  There might be trouble ensuring that a grid actually contains points, but `[w-0.5*h, w+0.5*h]` will do that.
 
 The syntax for delta grids and low-rank grids can be as follows: `R[:, None]` is a rank 1 grid, but `R[:, pi]` is a delta grid.
+
+The bounds of a field extend by half a grid step past each point, forming a box of size shape*h.  This is the only meaning of the grid step of a delta field.  Extrapolation is allowed inside the bounds.  A delta field is extrapolated as a constant, so that it can be resampled on a delta grid that is numerically close to its sampling plane.
+
+Idea: Field is an abstract superclass, with subclasses for different representations, such as a sampled field and its fourier coefficients.  All of these record the bounds of the field, which, along with the grid of wavenumbers, allow the sampling grid to be reconstructed.
