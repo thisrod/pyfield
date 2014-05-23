@@ -85,6 +85,10 @@ The method `i` calculates indices from coordinates
 
 These methods return a `Field` if called with no arguments or with a `Field`, and an `ndarray` if passed an `ndarray`.
 
+Grids and Fields have bounds, that extend half a grid step past the extreme points at each edge.
+
+	one.bounds()
+
 Fields
 ---
 
@@ -108,11 +112,20 @@ A field over this is treated as a constant over the missing axes in the common s
 
 There are some rules about such grids and sampling.  These ensure that delta grids and low-rank grids are round trip compatible: if we sample from one to the other and back again, we get the same field.  The rules when a delta field or a constant field is sampled are simple: they're treated as a delta function or a constant.  It is an error to sample a delta function on a grid that is not degenerate over the delta axes.  When a delta field is sampled on a delta grid, the interpolated value is the field value if the grid lies within the bounds of the field-delta grids still have a step along the degenerate axis, and the bounds are computed as usual, a box of width h about the single point.  Otherwise, the interpolated value is zero.  When an ordinary field is sample on a delta grid, a section through the field is interpolated.
 
-When a field is Sampling on a low-rank grid integrates over missing axes.
+Sampling on a low-rank grid integrates over missing axes.
 
 Sampling from a low-rank grid assumes constant over missing axes.
 
-The above rules make sampling between one-point and low-rank grids an identity.
+
+Sampling
+---
+
+The method `sampled` has an inverse, `setsamples`.
+
+	timeslice = Field(q, Grid.from_axes([t])*R)
+	results.setsamples(timeslice)
+
+These bear a similar relation to `__getitems__` and `__setitems__`.  Samples of the field `results` that lie within the bounds of `timeslice` are interpolated from it, the rest of `results` is unchanged.  In this instance, `timeslice` would typically be a delta field, with step equal to the timestep of integration.  If the assignment were repeated at every timestep, the effect would be to record the values of q at times that occur in results.abscissae, and discard the values at other times.
 
 
 Spectral methods
@@ -140,7 +153,7 @@ which is equivalent to
 
 	zero = ones.D()
 
-How should even-sized grids be handled?  Should the reciprocal grid always be odd, with the last term possibly split between +f and -f, so that real fields are interpolated with real functions?
+A SpectralField records the bounds of the field from which it was tranformed.  These, along with the Grid of wavenumbers, allow ifft to reconstruct the original grid.
 
 How should even-sized grids be handled?  Should the reciprocal grid always be odd, with the last term possibly split between +f and -f, so that real fields are interpolated with real functions?
 
