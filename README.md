@@ -85,6 +85,35 @@ The method `i` calculates indices from coordinates
 
 These methods return a `Field` if called with no arguments or with a `Field`, and an `ndarray` if passed an `ndarray`.
 
+Fields
+---
+
+
+Degenerate grids
+---
+
+So far, we have seen grids that cover a rectangle in the plane, a cube in space, or generally an n-prism in n-space.  The library is more general than this.  However, there are two special cases we have not considered.  These are a grid whose dimension is greater than its rank, and a grid that has only one point along some of its axes.  Or both: these are not mutally exclusive.
+
+A grid with only one point along an axis is a delta grid: a field over this grid is treated as an ordinary function over the axes with multiple points, but as a delta function at the single point on each degenerate axis.  Such a grid can be constructed by subscripting a grid with a coordinate, instead of a range:
+
+	line = plane[0,:]
+	
+This can then be transformed like any other grid.
+
+A grid with rank less than its dimension is constructed by supplying `None` as a subscript.
+
+	projection = plane[None,:]
+	
+A field over this is treated as a constant over the missing axes in the common space.  For example, it might be a function of space in a dynamical simulation.  Another example is a field whose value is one of the grid coordinates, which is constant over the other coordinates.
+
+There are some rules about such grids and sampling.  These ensure that delta grids and low-rank grids are round trip compatible: if we sample from one to the other and back again, we get the same field.  The rules when a delta field or a constant field is sampled are simple: they're treated as a delta function or a constant.  It is an error to sample a delta function on a grid that is not degenerate over the delta axes.  When a delta field is sampled on a delta grid, the interpolated value is the field value if the grid lies within the bounds of the field-delta grids still have a step along the degenerate axis, and the bounds are computed as usual, a box of width h about the single point.  Otherwise, the interpolated value is zero.  When an ordinary field is sample on a delta grid, a section through the field is interpolated.
+
+When a field is Sampling on a low-rank grid integrates over missing axes.
+
+Sampling from a low-rank grid assumes constant over missing axes.
+
+The above rules make sampling between one-point and low-rank grids an identity.
+
 
 Spectral methods
 ---
@@ -113,21 +142,7 @@ which is equivalent to
 
 How should even-sized grids be handled?  Should the reciprocal grid always be odd, with the last term possibly split between +f and -f, so that real fields are interpolated with real functions?
 
-
-Low rank grids
----
-
-We said at the start that a `Grid` need not be aligned with the usual axes, or start at the origin.  There is a further generalisation: the dimension of a `Grid` may exceed its rank.  For example, a rank 2 grid might have points lying in R<sup>3</sup>, on the plane x+y+z=1.  This is the most general case.
-
-Sampling on a one-point grid interpolates a section.
-
-Sampling from a one-point grid multiplies by a delta function at the point.
-
-Sampling on a low-rank grid integrates over missing axes.
-
-Sampling from a low-rank grid assumes constant over missing axes.
-
-The above rules make sampling between one-point and low-rank grids an identity.
+How should even-sized grids be handled?  Should the reciprocal grid always be odd, with the last term possibly split between +f and -f, so that real fields are interpolated with real functions?
 
 
 Efficiency goals
