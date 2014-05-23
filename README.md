@@ -25,7 +25,7 @@ An array of coodinates for all grid points in R<sup>n</sup> is given by
 
 and coordinates for the point with a known index, say `(1, 2)`, by
 
-	R.R(i=(1, 2))
+	R.W(i=(1, 2))
 
 The `*` operator on `Grid` is a cartesian product, so the same grid can be constructed with
 
@@ -45,7 +45,7 @@ This is an `ndarray`, so we can do things like
 
 	allclose(one + exp(1j*pi*one), 0*one)
 
-In fact, the array `R.R()`, which can also be expressed as `one.R()`, is a field on `R`, so
+In fact, the array `R.W()`, which can also be expressed as `one.R()`, is a field on `R`, so
 
 	r0 = (one.R()*one).S()/one.S()
 
@@ -63,25 +63,25 @@ is a grid similar to `R`, but starting from the origin of the plane.  Fields can
 
 Some points in `a` and `b` have been extrapolated; these samples have the value `nan`.
 
-As well as the common coordinates returned by `R()`, each grid has a system of grid coordinates, returned by `r()`.  These are preserved by translations and rotations.
+As well as the common coordinates returned by `W()`, each grid has a system of grid coordinates, returned by `w()`.  These are preserved by translations and rotations.
 
-	R.r()
-	R.rotated(U).r()
-	R.translated((0, -pi)).r()
+	R.w()
+	R.rotated(U).w()
+	R.translated((0, -pi)).w()
 
 However, the method `shifted` translates the origin of the grid coordinates
 
-	R.shifted((1,1)).r()
+	R.shifted((1,1)).w()
 
-The methods `R` and `r` can take an array of indices or of coordinates
+The methods `W` and `w` can take an array of indices or of coordinates
 
-	allclose(R.r(), R.r(i=indices(R.shape)))
-	allclose(R.r(), R.r(R=R.R()))
+	allclose(R.w(), R.w(i=indices(R.shape)))
+	allclose(R.w(), R.w(W=R.W()))
 
 The method `i` calculates indices from coordinates
 
-	R.i(r=R.r())
-	R.i(R=R.R())
+	R.i(w=R.w())
+	R.i(W=R.W())
 
 These methods return a `Field` if called with no arguments or with a `Field`, and an `ndarray` if passed an `ndarray`.
 
@@ -91,11 +91,27 @@ Spectral methods
 
 Fourier transforms are complicated, and I haven't worked out all the details yet.
 
-0. Are the original and the transform one `Field`, or two?
+The Fourier transform of a field is returned by the method fft
 
-2. How should even-sized grids be handled?  Should the reciprocal grid always be odd, with the last term possibly split between +f and -f, so that real fields are interpolated with real functions?
+	delta = ones.fft()
 
-1. How does the FT of a field remember the original grid, so that the inverse transform can translate back to the right place?  If even grids have odd shaped transforms, how does the inverse transform remember the shape of the original field?
+This is a SpectralField, wheras ones is a SampledField; these are both subtypes of ndarray.  The inverse is of course
+
+	allclose(ones, delta.ifft())
+
+The wavenumbers for which the elements of delta are coefficients are found by
+
+	delta.k()
+
+So we can take a gradient as
+
+	zero = (1j*delta.k()*ones.fft()).ifft()
+
+which is equivalent to
+
+	zero = ones.D()
+
+How should even-sized grids be handled?  Should the reciprocal grid always be odd, with the last term possibly split between +f and -f, so that real fields are interpolated with real functions?
 
 
 Low rank grids
