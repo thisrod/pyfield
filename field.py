@@ -421,11 +421,14 @@ minimum useful spectral method.
 	#
 	
 	def sampled(self, abscissae):
+		# 1. return zero unless my delta axes coincide with delta axes of abscissae 
+		# 2. interpolate me onto a grid like abscissae, but with epsilon axes extended past my bounds.  (For now, extrapolate with zeros.  Think about where to put nans later.)
+		# 3. integrate over epsilon axes.
 		# shortcut: interpolation on the same grid
 		if abscissae.close_points(self.abscissae):
 			return Field(self, abscissae)
 		# shortcut: time slicing n.y.i.
-		else:
+		else:		# delta fields and 
 			return Field(
 				map_coordinates(self, self.abscissae.i(W=abscissae.W()), cval=nan),
 				abscissae)

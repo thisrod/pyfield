@@ -138,6 +138,10 @@ Sampling on a low-rank grid integrates over missing axes.
 
 Sampling from a low-rank grid assumes constant over missing axes.
 
+Subscripting a field causes it to be interpolated on the grid derived from subscripting the abscissae with the same way.  For example, integration over the first axis is done by sampling on a low-rank grid
+
+	f[None, :]
+
 
 Sampling
 ---
@@ -148,6 +152,13 @@ The method `sampled` has an inverse, `setsamples`.
 	results.setsamples(timeslice)
 
 These bear a similar relation to `__getitems__` and `__setitems__`.  Samples of the field `results` that lie within the bounds of `timeslice` are interpolated from it, the rest of `results` is unchanged.  In this instance, `timeslice` would typically be a delta field, with step equal to the timestep of integration.  If the assignment were repeated at every timestep, the effect would be to record the values of q at times that occur in results.abscissae, and discard the values at other times.
+
+What happens when a delta field is sampled on an oblique low-rank grid?  E.g.,
+
+	o = ones[0,:]
+	g = o.sampled(x.rotated(U))
+	
+Is g equal to 1, sqrt(2), or something else?  What's required for round-trip resampling to work?
 
 
 Plotting
