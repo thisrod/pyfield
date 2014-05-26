@@ -9,6 +9,8 @@ The library aims to remove the accidental complexity from computing with fields,
 
 The current version of the library assumes that the quantity being sampled is an array, which is invariant as the coordinates change underneath it.  Future versions might understand how the components of vectors and tensors should transform in different coordinate systems.  
 
+The library code is a draft.  Many user actions that ought to generate a meaningful exception instead cause an assertion to fail, and sometimes that assertion has a comment "n.y.i.", meaning not yet implemented.  However, this document should describe exactly what the user is allowed to do, and what the library should do in response, and the code should either do that or fail deliberately.  Please report exceptions to that.
+
 
 Grids
 ---
@@ -89,8 +91,17 @@ Grids and Fields have bounds, that extend half a grid step past the extreme poin
 
 	one.bounds()
 
+This follows the convention of the next section, with shape 2*rank.
+
+
 Fields
 ---
+
+When a field has more than one component, we need a convention about the order that the axes go in when the samples are represented as an array.  This is
+
+other components*axis components*sample points.
+
+So, for example, samples of the gradient of the wavefunction of a spin 1/2 particle on a 4*5*6 grid would be stored in an array of shape 2*3*4*5*6.  The 2 is the spin components, and the 3 is the x, y and z components of the gradient vector.
 
 
 Degenerate grids
@@ -103,6 +114,8 @@ A grid with only one point along an axis is a delta grid: a field over this grid
 	line = plane[0,:]
 	
 This can then be transformed like any other grid.
+
+No degenerate grid can be constructed using `Grid.from_axes`.  There is no way to infer a reasonable step from an axis with a single point, and this is required even in degenerate grids.  However, `Grid.delta(x, h)` constructs a 1D delta grid at coordinate x with step h.
 
 A grid with rank less than its dimension is constructed by supplying `None` as a subscript.
 
@@ -184,3 +197,11 @@ The syntax for delta grids and low-rank grids can be as follows: `R[:, None]` is
 The bounds of a field extend by half a grid step past each point, forming a box of size shape*h.  This is the only meaning of the grid step of a delta field.  Extrapolation is allowed inside the bounds.  A delta field is extrapolated as a constant, so that it can be resampled on a delta grid that is numerically close to its sampling plane.
 
 Idea: Field is an abstract superclass, with subclasses for different representations, such as a sampled field and its fourier coefficients.  All of these record the bounds of the field, which, along with the grid of wavenumbers, allow the sampling grid to be reconstructed.
+
+
+Limitations of Python
+---
+
+At some point, I might extend this library to a language.  Among other things, that would allow the following limitations of Python to be overcome:
+
+Only brackets can take slice notation, so we have somewhat ugly methods sampled() and setsamples().  The language would use parentheses for these, where the index is a grid or the assigned value a field, and would use brackets for indices.  This is consistent with function calls: exp(x) can be read either as "the values of the function exp on the grid x" or "the field exp interpolated on the grid x", but these are the same thing.  It isn't clear that indirect interpolation, f(x) where f and x are both fields, is generally useful.
