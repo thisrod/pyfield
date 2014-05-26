@@ -19,71 +19,59 @@ The mechanics of this are done by a class `Grid`.  This is a abstract representa
 
 At `Grid` is usually constructed from its axes, as
 
-	R = Grid.from_axes(0.1*arange(3), pi+0.5*arange(4))
-
-An array of coodinates for all grid points in R<sup>n</sup> is given by
-
-	R.W()
-
-and coordinates for the point with a known index, say `(1, 2)`, by
-
-	R.W(i=(1, 2))
+	S = Grid.from_axes(0.1*arange(3), pi+0.5*arange(4))
 
 The `*` operator on `Grid` is a cartesian product, so the same grid can be constructed with
 
 	x, y = Grid(0.1*arange(10)), Grid(pi+0.5*arange(20))
-	R = x*y
+	S = x*y
+	
+However, the points of `S` now lie in the plane, while `x` and `y` comprise points on the line, with no record of which corresponds to the first axis of `S` and which to the second.  We'd be better off constructing `S` the first way, and projecting out the axes with
+
+	x = S[:, None];  y = S[None, :]
+	
+Now `x` and `y` lie in the plane, and `x*y`, `y*x` and `S` are the same.
+
+FIXME describe the precise rules for * later on
+
+An array of coodinates for all grid points in R<sup>n</sup> is given by
+
+	S.W()
+
+and coordinates for the point with a known index, say `(1, 2)`, by
+
+	S.W(i=(1, 2))
 
 A `Grid` constructed like this is parallel to the axes of R<sup>n</sup>, but more general grids can be derived by rotation, specified by an orthogonal matrix.
 
 	U = array([[cos(1), sin(1)], [-sin(1), cos(1)]])
-	R.rotated(U)
-
-A `Field` is constructed from a `Grid` and a set of data sampled on it, as follows
-
-	one = Field(ones(R.shape), R)
-
-This is an `ndarray`, so we can do things like
-
-	allclose(one + exp(1j*pi*one), 0*one)
-
-In fact, the array `R.W()`, which can also be expressed as `one.R()`, is a field on `R`, so
-
-	r0 = (one.R()*one).S()/one.S()
-
-is a complicated way to find the centre of mass of a rectangle.  The method `S` computes the integral of a `Field`.
-
+	T = S.rotated(U)
 
 As well as rotating grids, we can translate them.
 
-	S = R.translated((0, -pi))
+	S.translated((0, -pi))
 
-is a grid similar to `R`, but starting from the origin of the plane.  Fields can be interpolated on other grids
-
-	a = one.sampled(S)
-	b = one.sampled(R.rotated(U))
-
-Some points in `a` and `b` have been extrapolated; these samples have the value `nan`.
+is a grid similar to `S`, but starting from the origin of the plane.
 
 As well as the common coordinates returned by `W()`, each grid has a system of grid coordinates, returned by `w()`.  These are preserved by translations and rotations.
 
-	R.w()
-	R.rotated(U).w()
-	R.translated((0, -pi)).w()
+	S.w()
+	S.rotated(U).w()
+	S.translated((0, -pi)).w()
 
 However, the method `shifted` translates the origin of the grid coordinates
 
-	R.shifted((1,1)).w()
+	S.shifted((1,1)).w()
 
 The methods `W` and `w` can take an array of indices or of coordinates
 
-	allclose(R.w(), R.w(i=indices(R.shape)))
-	allclose(R.w(), R.w(W=R.W()))
+	allclose(S.w(), S.w(i=indices(S.shape)))
+	allclose(S.w(), S.w(W=S.W()))
 
 The method `i` calculates indices from coordinates
 
-	R.i(w=R.w())
-	R.i(W=R.W())
+	S.i(w=S.w())
+	S.i(W=S.W())
 
 These methods return a `Field` if called with no arguments or with a `Field`, and an `ndarray` if passed an `ndarray`.
 
@@ -91,17 +79,42 @@ Grids and Fields have bounds, that extend half a grid step past the extreme poin
 
 	one.bounds()
 
-This follows the convention of the next section, with shape 2*rank.
+This has shape 2*one.rank().
 
 
 Fields
 ---
 
-When a field has more than one component, we need a convention about the order that the axes go in when the samples are represented as an array.  This is
+A `Field` is constructed from a `Grid` and a set of data sampled on it, as follows
+
+	one = Field(ones(S.shape), S)
+
+This is an `ndarray`, so we can do things like
+
+	allclose(one + exp(1j*pi*one), 0*one)
+
+In fact, the array `S.W()`, which can also be expressed as `one.R()`, is a field on `S`, so
+
+	r0 = (one.R()*one).S()/one.S()
+
+is a complicated way to find the centre of mass of a rectangle.  The method `S` computes the integral of a `Field`.
+
+When a field has more than one component, we need a convention about the order that the axes go in when the samples are represented as an array.  The convention is
 
 other components*axis components*sample points.
 
 So, for example, samples of the gradient of the wavefunction of a spin 1/2 particle on a 4*5*6 grid would be stored in an array of shape 2*3*4*5*6.  The 2 is the spin components, and the 3 is the x, y and z components of the gradient vector.
+
+Fields can be interpolated on other grids
+
+	a = one.sampled(T)
+
+Some points in `a` and `b` have been extrapolated; these samples have the value `nan`.  The corresponding assignment operation is `setsamples`
+
+	a[:,:] = 2
+	one.setsamples(a)
+	
+The values of `one` outside the bounds of `T` are preserved.
 
 
 Degenerate grids
@@ -117,11 +130,7 @@ This can then be transformed like any other grid.
 
 No degenerate grid can be constructed using `Grid.from_axes`.  There is no way to infer a reasonable step from an axis with a single point, and this is required even in degenerate grids.  However, `Grid.delta(x, h)` constructs a 1D delta grid at coordinate x with step h.
 
-A grid with rank less than its dimension is constructed by supplying `None` as a subscript.
-
-	projection = plane[None,:]
-	
-A field over this is treated as a constant over the missing axes in the common space.  For example, it might be a function of space in a dynamical simulation.  Another example is a field whose value is one of the grid coordinates, which is constant over the other coordinates.
+A grid with rank less than its dimension is constructed by supplying `None` as a subscript.  We already saw this when `x` and `y` were constructed from `S`.  A field over this is treated as a constant over the missing axes in the common space.  For example, it might be a function of space in a dynamical simulation.  Another example is a field whose value is one of the grid coordinates, which is constant over the other coordinates.
 
 There are some rules about such grids and sampling.  These ensure that delta grids and low-rank grids are round trip compatible: if we sample from one to the other and back again, we get the same field.  The rules when a delta field or a constant field is sampled are simple: they're treated as a delta function or a constant.  It is an error to sample a delta function on a grid that is not degenerate over the delta axes.  When a delta field is sampled on a delta grid, the interpolated value is the field value if the grid lies within the bounds of the field-delta grids still have a step along the degenerate axis, and the bounds are computed as usual, a box of width h about the single point.  Otherwise, the interpolated value is zero.  When an ordinary field is sample on a delta grid, a section through the field is interpolated.
 
@@ -139,6 +148,25 @@ The method `sampled` has an inverse, `setsamples`.
 	results.setsamples(timeslice)
 
 These bear a similar relation to `__getitems__` and `__setitems__`.  Samples of the field `results` that lie within the bounds of `timeslice` are interpolated from it, the rest of `results` is unchanged.  In this instance, `timeslice` would typically be a delta field, with step equal to the timestep of integration.  If the assignment were repeated at every timestep, the effect would be to record the values of q at times that occur in results.abscissae, and discard the values at other times.
+
+
+Plotting
+---
+
+Fields of rank 1 and 2 have some methods to assist plotting.  These methods label the axes with the grid coordinates.
+
+A rank 1 field is plotted against its axis as follows
+
+	exp(x).plot()
+	
+If `x` has multiple components, these are plotted as separate lines.
+
+A rank 2 field can be plotted in greyscale with
+
+	(x*y).positive()
+	(x*y).negative(interpolation='nearest')
+	
+and variations on this.  Positive and negative have the same meaning as in photography.
 
 
 Spectral methods
@@ -181,8 +209,6 @@ History and motivation
 ---
 
 This library was inspired by XMDS by Greg Collecutt.  With a decade of hindsight, I think it is clear that part of this system is very helpful to users, but other parts aren't flexible enough for general use, and are too complicated for general users to extend.  I've tried to copy the former and omit the latter.  Once this library is imported into Python, I hope that the rest will be fairly straightforward to implement.
-
-Many details were inspired by the books of Nick L. Trefethen, the clarity of whose thoughts and programs I greatly admire.
 
 The names of the methods `w` and `W` are intended to suggest a coordinate or a frequency, but be ambigous between the two.
 
