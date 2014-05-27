@@ -311,8 +311,25 @@ the reciprocal grid size is always odd.  has same orientation as self
 		
 	def cover(self, other):
 		"return a grid like me, with extra axes prepended to cover the bounds of other"
-		# for the axes of other: if it has a significant orthogonal component, prepend it with step geometric_mean(other.h) and origin derived from projecting the axes of other onto it.
-		assert False
+		# for the axes of other: if it has a significant orthogonal component, prepend it with h as the maximum of other.h, size the sum of other.size, and move my grid origin along the new axis until my centre aligns with other's grid origin.
+		# this is bodgy
+		h = other.h.max()
+		n = sum(other.size)
+		U = self.U
+		o = self.o
+		xaxs = 0
+		for i in range(other.rank()):
+			prp = dot(U, dot(U.T, other.U[:,i]))
+			if not allclose(prp, zeros(self.dim())):
+				prp = prp/norm(prp)
+				U = concatenate((prp.reshape((-1,1)), U), axis=1)
+				o += (dot(prp, other.o-o)-h*n)*prp
+				xaxs += 1
+		return self._clone(shape=(n,)*xaxs+self.shape,
+			h=concatenate((array([h]*xaxs), self.h))
+			p=concatenate((zeros(xaxs), self.p)),
+			o=o
+			U=U)
 		
 		
 	
