@@ -443,6 +443,14 @@ minimum useful spectral method.
 	#
 	
 	def sampled(self, abscissae):
+
+		# this is a kludge. a better right way is to integrate
+		# my band-limited interpolant over the epsilon space of
+		# abscissae, which is equivalent to adding up my Fourier
+		# coefficients with appropriate phases. problem:
+		# band-limited interpolants don't approximate
+		# Thomas-Fermi clouds well enough to get an accurate
+		# atom number.
 		
 		# extend my delta axes to two equal samples, at ±h/2
 		eself = array(self)
