@@ -309,6 +309,10 @@ the reciprocal grid size is always odd.  has same orientation as self
 	def blank(self):
 		return Field(empty(self.shape), self)
 		
+	def cover(self, other):
+		"return a grid like me, with extra axes prepended to cover the bounds of other"
+		assert False	# n.y.i.
+		
 		
 	
 # For now, load and store read and write the whole file every time a
@@ -421,17 +425,31 @@ minimum useful spectral method.
 	#
 	
 	def sampled(self, abscissae):
-		# 1. return zero unless my delta axes coincide with delta axes of abscissae 
-		# 2. interpolate me onto a grid like abscissae, but with epsilon axes extended past my bounds.  (For now, extrapolate with zeros.  Think about where to put nans later.)
-		# 3. integrate over epsilon axes.
-		# shortcut: interpolation on the same grid
-		if abscissae.close_points(self.abscissae):
-			return Field(self, abscissae)
-		# shortcut: time slicing n.y.i.
-		else:		# delta fields and 
-			return Field(
-				map_coordinates(self, self.abscissae.i(W=abscissae.W()), cval=nan),
-				abscissae)
+		
+		# extend my delta axes to two equal samples, at ±h/2
+		eself = array(self)
+		d = zeros(self.ndim)
+		for i in range(self.ndim):
+			if eself.shape[i] == 1:
+				eself = concatenate((eself, eself), axis=i)
+			d[i] = -self.abscissae.h[i]/2
+		egrid = self.abscissae._clone(shape=eself.shape,
+			p=self.abscissae.p - d,
+			o=self.abscissae.o - d)
+			
+		# interpolate me on an extension of abscissae
+		S = abscissae.cover(self)
+		f = map_coordinates(eself, egrid.i(W=S.W()), cval=nan)
+			
+		# if any value along an epsilon axis was not extrapolated, 
+		# fill in the nans with zeros.
+		eaxs = tuple(range(S.rank()-abscissae.rank()))
+		inbnds = logical_not(isnan(f).all(axis=eaxs))
+		f[isnan(f) & inbnds] = 0
+		
+		# integrate over epsilon axes
+		return Field(f.sum(axis=eaxs), abscissae)
+				
 				
 	def setsamples(self, fld):
 		assert False	# n.y.i.
