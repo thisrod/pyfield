@@ -34,6 +34,8 @@ Now `x` and `y` lie in the plane, and `x*y`, `y*x` and `S` are the same.
 
 FIXME describe the precise rules for * later on
 
+FIXME What does W return for epsilon grids?  Perhaps it just doesn't work, and we need to do S.through(point).W()
+
 An array of coodinates for all grid points in R<sup>n</sup> is given by
 
 	S.W()

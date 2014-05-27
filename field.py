@@ -311,7 +311,8 @@ the reciprocal grid size is always odd.  has same orientation as self
 		
 	def cover(self, other):
 		"return a grid like me, with extra axes prepended to cover the bounds of other"
-		assert False	# n.y.i.
+		# for the axes of other: if it has a significant orthogonal component, prepend it with step geometric_mean(other.h) and origin derived from projecting the axes of other onto it.
+		assert False
 		
 		
 	
@@ -450,10 +451,15 @@ minimum useful spectral method.
 		# integrate over epsilon axes
 		return Field(f.sum(axis=eaxs), abscissae)
 				
-				
 	def setsamples(self, fld):
-		assert False	# n.y.i.
-	
+		# what should happen if some of my epsilon axes
+		# are normal or delta axes in fld?
+		f = fld.sampled(self.abscissae)
+		# copy non-nans back (but what if the nan was interpolated?)
+		ix = logical_not(isnan(f))
+		self[ix] = f[ix]
+
+
 	#
 	# misc
 	#
