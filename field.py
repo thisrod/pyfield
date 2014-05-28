@@ -444,46 +444,66 @@ minimum useful spectral method.
 	
 	def sampled(self, abscissae):
 
-		# this is a kludge. a better right way is to integrate
-		# my band-limited interpolant over the epsilon space of
-		# abscissae, which is equivalent to adding up my Fourier
-		# coefficients with appropriate phases. problem:
-		# band-limited interpolants don't approximate
-		# Thomas-Fermi clouds well enough to get an accurate
-		# atom number.
+		# this only implements the cases we need. the full
+		# version, that integrates over oblique columns in a
+		# rectangular grid, is hard. integrating the
+		# band-limited interpolant might be feasible.
 		
-		# extend my delta axes to two equal samples, at ±h/2
-		eself = array(self)
-		d = zeros(self.ndim)
-		for i in range(self.ndim):
-			if eself.shape[i] == 1:
-				eself = concatenate((eself, eself), axis=i)
-			d[i] = -self.abscissae.h[i]/2
-		egrid = self.abscissae._clone(shape=eself.shape,
-			p=self.abscissae.p - d,
-			o=self.abscissae.o - d)
+		if self.rank() == self.dim() and \
+			self.dim() == abscissae.dim() and \
+			abscissae.rank() == abscissae.dim():
+			return self._sampled_normal(abscissae)
+		else:
+			return self._sampled_special(abscissae)
 			
-		# interpolate me on an extension of abscissae
-		S = abscissae.cover(self)
-		f = map_coordinates(eself, egrid.i(W=S.W()), cval=nan)
+	def _sampled_normal(self, abscissae):
+	
+		return Field(
+			map_coordinates(self, self.abscissae.i(W=abscissae.W()),
+				cval=nan),
+			abscissae)
 			
-		# if any value along an epsilon axis was not extrapolated, 
-		# fill in the nans with zeros.
-		eaxs = tuple(range(S.rank()-abscissae.rank()))
-		inbnds = logical_not(isnan(f).all(axis=eaxs))
-		f[isnan(f) & inbnds] = 0
+	def _sampled_special(self, abscissae):
 		
-		# integrate over epsilon axes
-		return Field(f.sum(axis=eaxs), abscissae)
+		# this only handles the normal -> 1e case
+		S =  self.abscissae
+		assert S.rank() == S.dim()
+		assert S.dim() == abscissae.dim()
+		assert abscissae.dim() - abscissae.rank() == 1
+		
+		# sample with my axis in place of the missing one
+		
+		eax = argmin([norm(x) for x in dot(self.U.T, abscissae.U)])
+		eabsc = Grid(shape=S.shape[eax:eax+1],
+			U=S.U[:,eax:eax+1],
+			h=S.h[eax:eax+1],
+			p=S.p[eax:eax+1],
+			o=S.o) * abscissae
+		f = self.sampled(eabsc)
+		
+		# integrate over the missing axis
+		
+		return Field(S.h[eax]*array(f).sum(axis=0), abscissae)
 				
 	def setsamples(self, fld):
-		# what should happen if some of my epsilon axes
-		# are normal or delta axes in fld?
-		f = fld.sampled(self.abscissae)
-		# copy non-nans back (but what if the nan was interpolated?)
-		ix = logical_not(isnan(f))
-		self[ix] = f[ix]
-
+	
+		# this only handles assigning delta slices on the first axis
+		S, R = self.abscissae, fld.abscissae
+		assert S.rank() == 4
+		assert S.dim() == 4
+		assert allclose(S.U, R.U)
+		assert fld.shape[0] == 1
+		assert fld.shape.count(1) == 1
+		u = S.U[:,0]
+		assert allclose(dot(S.U[:,1:].T, S.o), dot(S.U[:,1:].T, R.o))
+		assert allclose(S.h[1:], R.h[1:])
+		
+		# find index range we're looking for
+		I = 1 + int((dot(u, R.o-S.o)+R.h[0]/2)/S.h[0])
+		i = 1 + int((dot(u, R.o-S.o)-R.h[0]/2)/S.h[0])
+		if I == i+1:
+			self[i:I,:,:,:] = fld
+		
 
 	#
 	# misc
