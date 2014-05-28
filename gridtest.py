@@ -4,7 +4,7 @@ x, y, z, s = [Grid.from_axes(q) for q in
 	[arange(2), 0.3*arange(3), pi+arange(5), [0, 17]]]
 R = x*y*z
 T = s*R
-f = Field(R.blank(), R);  f[:,:,:] = 1
+f = SampledField(R.blank(), R);  f[:,:,:] = 1
 
 # check assignment worked
 assert f[0,0,0] == 1

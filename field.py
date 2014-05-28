@@ -78,7 +78,7 @@ class Grid:
 		
 	def bounds(self):
 		n = array(self.shape)
-		return array([p-0.5*h, p+(n+0.5)*h])
+		return array([self.p-0.5*self.h, self.p+(n+0.5)*self.h])
 
 	def __len__(self):
 		return prod(self.shape)
@@ -177,7 +177,7 @@ class Grid:
 			h, p, o = self._vectors(W)
 			return p + tensordot(self.U.T, W-o, 1)		
 		else:
-			return Field(self.w(i=self.i()), self)
+			return SampledField(self.w(i=self.i()), self)
 		
 	def W(self, i=None, w=None):
 		assert i is None or w is None
@@ -190,7 +190,7 @@ class Grid:
 			h, p, o = self._vectors(w)
 			return o + tensordot(self.U, w-p, 1)
 		else:
-			return Field(self.W(i=self.i()), self)
+			return SampledField(self.W(i=self.i()), self)
 		
 	def i(self, w=None, W=None):
 		assert w is None or W is None
@@ -203,7 +203,7 @@ class Grid:
 			h, p, o = self._vectors(W)
 			return tensordot(self.U.T, W-o, 1)/h
 		else:
-			return Field(indices(self.shape), self)
+			return SampledField(indices(self.shape), self)
 		
 	def ww(self, w=None):
 		"inertia tensors about the grid origin for a unit mass at each point of r, or the grid by default.  unlear if this is useful for rank greater than three."
@@ -216,8 +216,8 @@ class Grid:
 		Pd = ndarray(buffer=P, dtype=P.dtype, \
 			shape=w.shape, strides=((3+1)*P.strides[1],)+ P.strides[2:])
 		Pd += (w**2).sum(0)
-		if type(w) is Field:
-			return Field(P, w.abscissae)
+		if type(w) is SampledField:
+			return SampledField(P, w.abscissae)
 		else:
 			return P
 		
@@ -307,7 +307,7 @@ the reciprocal grid size is always odd.  has same orientation as self
 	#
 		
 	def blank(self):
-		return Field(empty(self.shape), self)
+		return SampledField(empty(self.shape), self)
 		
 	def cover(self, other):
 		"return a grid like me, with extra axes prepended to cover the bounds of other"
@@ -326,9 +326,9 @@ the reciprocal grid size is always odd.  has same orientation as self
 				o += (dot(prp, other.o-o)-h*n)*prp
 				xaxs += 1
 		return self._clone(shape=(n,)*xaxs+self.shape,
-			h=concatenate((array([h]*xaxs), self.h))
+			h=concatenate((array([h]*xaxs), self.h)),
 			p=concatenate((zeros(xaxs), self.p)),
-			o=o
+			o=o,
 			U=U)
 		
 		
@@ -340,14 +340,14 @@ the reciprocal grid size is always odd.  has same orientation as self
 
 def load_field(lbl):
 	ffile = load('fields.npz')
-	return Field(ffile[lbl], label=lbl)
+	return SampledField(ffile[lbl], label=lbl)
 	
 
 class SampledField(ndarray):
 	
 	# FIXME binary ufuncs should check the grids are the same
 	
-	def __new__(cls, ordinates, abscissae=Grid.default(), label=None):
+	def __new__(cls, ordinates, abscissae, label=None):
 		obj = asarray(ordinates).view(cls)
 		obj.abscissae = abscissae
 		assert obj.shape[-obj.abscissae.rank():] == obj.abscissae.shape
@@ -370,7 +370,7 @@ class SampledField(ndarray):
 
 	def __getitem__(self, ixs):
 		if any([type(i) is slice for i in ixs]):
-			return Field(self.view(ndarray).__getitem__(ixs),
+			return SampledField(self.view(ndarray).__getitem__(ixs),
 				self.abscissae.__getitem__(ixs))
 		else:
 			return(self.view(ndarray).__getitem__(ixs))
@@ -416,7 +416,7 @@ class SampledField(ndarray):
 			ft = concatenate((ft[:1]/2, ft[1:], ft[:1]/2))
 		# document why this satisfies Rayleigh's theorem
 		ft /= sqrt(2*pi)
-		F = Field(ft, self.abscissae.reciprocal())
+		F = SampledField(ft, self.abscissae.reciprocal())
 		F.coords = self.abscissae
 		return F
 	
@@ -435,7 +435,7 @@ minimum useful spectral method.
 
 		k = self.abscissae.kspace()
 		dvec = exp(l*(k**2).sum(axis=0))
-		return Field(ifftn(dvec*fftn(self.view(ndarray))), self.abscissae)
+		return SampledField(ifftn(dvec*fftn(self.view(ndarray))), self.abscissae)
 
 
 	#
@@ -458,7 +458,7 @@ minimum useful spectral method.
 			
 	def _sampled_normal(self, abscissae):
 	
-		return Field(
+		return SampledField(
 			map_coordinates(self, self.abscissae.i(W=abscissae.W()),
 				cval=nan),
 			abscissae)
@@ -483,7 +483,7 @@ minimum useful spectral method.
 		
 		# integrate over the missing axis
 		
-		return Field(S.h[eax]*array(f).sum(axis=0), abscissae)
+		return SampledField(S.h[eax]*array(f).sum(axis=0), abscissae)
 				
 	def setsamples(self, fld):
 	
