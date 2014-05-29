@@ -124,11 +124,7 @@ Degenerate grids
 
 So far, we have seen grids that cover a rectangle in the plane, a cube in space, or generally an n-prism in n-space.  The library is more general than this.  However, there are two special cases we have not considered.  These are a grid whose dimension is greater than its rank, and a grid that has only one point along some of its axes.  Or both: these are not mutally exclusive.
 
-A grid with only one point along an axis is a delta grid: a field over this grid is treated as an ordinary function over the axes with multiple points, but as a delta function at the single point on each degenerate axis.  Such a grid can be constructed by subscripting a grid with a coordinate, instead of a range:
-
-	line = plane[0,:]
-	
-This can then be transformed like any other grid.
+A grid with only one point along an axis is treated as follows.  A field over such a grid is sampled normally along the axes with multiple points.  On the degenerate axis, is varies as sinc(2&pi;x/h), with the first zeros at &pm;h.  Even with one point, the grid still has a spacing, for this purpose.  If this field is sampled on a nondegenerate grid, the sinc function will actually be sampled.  This means that taking slices with spacing h, on grids of width h, then adding them back together, will reconstruct the bandwidth limited 
 
 No degenerate grid can be constructed using `Grid.from_axes`.  There is no way to infer a reasonable step from an axis with a single point, and this is required even in degenerate grids.  However, `Grid.delta(x, h)` constructs a 1D delta grid at coordinate x with step h.
 
