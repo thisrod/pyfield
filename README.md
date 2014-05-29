@@ -118,6 +118,8 @@ Some points in `a` and `b` have been extrapolated; these samples have the value 
 	
 The values of `one` outside the bounds of `T` are preserved.
 
+The method `setsamples` is the opposite of `sampled`.  It samples the lvalue on the grid of the rvalue, subtracts the result from the rvalue samples, interpolates that on the lvalue, and adds that to the lvalue samples.  In the case that the grids coincide, this reduces to assignment.
+
 
 Degenerate grids
 ---
