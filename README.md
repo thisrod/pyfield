@@ -7,7 +7,7 @@ A field is a scalar, vector or tensor quantity that depends on position and time
 
 The library aims to remove the accidental complexity from computing with fields, in order to spare scientific programers from bookeeping, to prevent large classes of bugs from occuring at all, and to allow the remaining code to address physical problems, and the remaining bugs to be removed by physical nous.
 
-The current version of the library assumes that the quantity being sampled is an array, which is invariant as the coordinates change underneath it.  Future versions might understand how the components of vectors and tensors should transform in different coordinate systems.  
+The current version of the library assumes that the quantity being sampled is an array, whose components do not vary as the coordinates change underneath them.  Future versions might understand how the components of vectors and tensors should transform in different coordinate systems.  
 
 The library code is a draft.  Many user actions that ought to generate a meaningful exception instead cause an assertion to fail, and sometimes that assertion has a comment "n.y.i.", meaning not yet implemented.  However, this document should describe exactly what the user is allowed to do, and what the library should do in response, and the code should either do that or fail deliberately.  Please report exceptions to that.
 
@@ -15,7 +15,7 @@ The library code is a draft.  Many user actions that ought to generate a meaning
 Grids
 ---
 
-The mechanics of this are done by a class `Grid`.  This is a abstract representation of a rectangular grid of points in R<sup>n</sup>, along with a system of grid coordinates.  The points must form a rectangular grid, but this does not have to be aligned with the usual axes or start at the origin.  We can represent a skew plane in space, and things like that.
+The mechanics of recording coordinates are done by a class `Grid`, representing a rectangular grid of points in R<sup>n</sup>, along with a system of coordinates.  The grid need not be aligned with the usual axes or start at the origin: we can represent a skew plane in space, and things like that.
 
 At `Grid` is usually constructed from its axes, as
 
@@ -34,7 +34,7 @@ Now `x` and `y` lie in the plane, and `x*y`, `y*x` and `S` are the same.
 
 FIXME describe the precise rules for * later on
 
-FIXME What does W return for epsilon grids?  Perhaps it just doesn't work, and we need to do S.through(point).W()
+FIXME You can't do S.W() on a low-rank grid, instead do do S.through(point).W()
 
 An array of coodinates for all grid points in R<sup>n</sup> is given by
 
@@ -54,6 +54,10 @@ As well as rotating grids, we can translate them.
 	S.translated((0, -pi))
 
 is a grid similar to `S`, but starting from the origin of the plane.
+
+TODO Implement the full set of MetaFont transforms.
+
+TODO Grids in the Argand plane, complex h, shape is a Gaussian integer
 
 As well as the common coordinates returned by `W()`, each grid has a system of grid coordinates, returned by `w()`.  These are preserved by translations and rotations.
 
@@ -116,9 +120,11 @@ Some points in `a` and `b` have been extrapolated; these samples have the value 
 	a[:,:] = 2
 	one.setsamples(a)
 	
-The values of `one` outside the bounds of `T` are preserved.
+The values of `one` outside the bounds of `T` are nearly preserved.  The actual algorithm for setsamples is as follows.  It samples the lvalue on the grid of the rvalue, subtracts the result from the rvalue samples, interpolates that on the lvalue, and adds that to the lvalue samples.  In the case that the grids coincide, this reduces to assignment.
 
-The method `setsamples` is the opposite of `sampled`.  It samples the lvalue on the grid of the rvalue, subtracts the result from the rvalue samples, interpolates that on the lvalue, and adds that to the lvalue samples.  In the case that the grids coincide, this reduces to assignment.
+Does setting samples on disjoint parts of a field commute?
+
+We can get an array of results by adding slices at close times to a field with a larger step.  Does assigning the slices to the field do the same thing?
 
 
 Degenerate grids
@@ -126,7 +132,7 @@ Degenerate grids
 
 So far, we have seen grids that cover a rectangle in the plane, a cube in space, or generally an n-prism in n-space.  The library is more general than this.  However, there are two special cases we have not considered.  These are a grid whose dimension is greater than its rank, and a grid that has only one point along some of its axes.  Or both: these are not mutally exclusive.
 
-A grid with only one point along an axis is treated as follows.  A field over such a grid is sampled normally along the axes with multiple points.  On the degenerate axis, is varies as sinc(2&pi;x/h), with the first zeros at &pm;h.  Even with one point, the grid still has a spacing, for this purpose.  If this field is sampled on a nondegenerate grid, the sinc function will actually be sampled.  This means that taking slices with spacing h, on grids of width h, then adding them back together, will reconstruct the bandwidth limited 
+A grid with only one point along an axis is treated fairly simply.  A field over such a grid is sampled normally along the axes with multiple points.  On the degenerate axis, is varies as sinc(2&pi;x/h), with the first zeros at &pm;h.  Even with one point, the grid still has a spacing, for this purpose.  If this field is sampled on a nondegenerate grid, the sinc function will actually be sampled.  This means that taking slices with spacing h, on grids of width h, then adding them back together, will reconstruct the bandwidth limited interpolant of the field that was sliced.
 
 No degenerate grid can be constructed using `Grid.from_axes`.  There is no way to infer a reasonable step from an axis with a single point, and this is required even in degenerate grids.  However, `Grid.delta(x, h)` constructs a 1D delta grid at coordinate x with step h.
 
@@ -151,14 +157,7 @@ The method `sampled` has an inverse, `setsamples`.
 	timeslice = Field(q, Grid.from_axes([t])*R)
 	results.setsamples(timeslice)
 
-These bear a similar relation to `__getitems__` and `__setitems__`.  Samples of the field `results` that lie within the bounds of `timeslice` are interpolated from it, the rest of `results` is unchanged.  In this instance, `timeslice` would typically be a delta field, with step equal to the timestep of integration.  If the assignment were repeated at every timestep, the effect would be to record the values of q at times that occur in results.abscissae, and discard the values at other times.
-
-What happens when a delta field is sampled on an oblique low-rank grid?  E.g.,
-
-	o = ones[0,:]
-	g = o.sampled(x.rotated(U))
-	
-Is g equal to 1, sqrt(2), or something else?  What's required for round-trip resampling to work?
+These bear a similar relation to `__getitems__` and `__setitems__`.  
 
 
 Plotting
