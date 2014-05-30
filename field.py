@@ -7,6 +7,10 @@ from scipy.ndimage.interpolation import map_coordinates
 
 _albls = ['_s', '_x', '_y', '_z']
 
+class NullGrid:
+	"this is a special case, because numpy does odd things with shape 0 arrays."
+	pass
+
 class Grid:
 
 	#
@@ -26,6 +30,12 @@ class Grid:
 	#
 	
 	# the method __init__ is responsible for casting instance variables to the right type.
+
+	def __new__(cls, shape, o, p, h, U):
+		if shape == ():
+			return NullGrid(**args)
+		else:
+			return object.__new__(cls)
 		
 	@classmethod
 	def from_axes(cls, *axes):
@@ -74,7 +84,9 @@ class Grid:
 		return self.U.shape[0]
 		
 	def axes(self):
-		return [p+h*arange(n) for p, h, n in zip(self.p, self.h, self.shape)]
+		return [Grid(shape=self.shape[i:i+1], o=self.o,
+			h=self.h[i:i+1], p=self.p[i:i+1], U=self.U[:,i:i+1])
+			for i in range(self.rank())]
 		
 	def bounds(self):
 		n = array(self.shape)
@@ -159,12 +171,16 @@ class Grid:
 		N = self._trunc(naxs)
 		N = N._clone(shape=high - low, p=N.w(i=low), o=N.W(i=low))
 		
+		assert False	# this will get the axes in the wrong order
+		
 		return D*N
 				
 			
 	#
 	# indices and coordinates
 	#
+	
+	# special case for null grids
 		
 	def w(self, i=None, W=None):
 		assert i is None or W is None
