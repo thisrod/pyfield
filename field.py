@@ -7,9 +7,6 @@ from scipy.ndimage.interpolation import map_coordinates
 
 _albls = ['_s', '_x', '_y', '_z']
 
-class NullGrid:
-	"this is a special case, because numpy does odd things with shape 0 arrays."
-	pass
 
 class Grid:
 
@@ -33,7 +30,7 @@ class Grid:
 
 	def __new__(cls, shape, o, p, h, U):
 		if shape == ():
-			return NullGrid(**args)
+			return object.__new__(NullGrid)
 		else:
 			return object.__new__(cls)
 		
@@ -197,6 +194,7 @@ class Grid:
 		
 	def W(self, i=None, w=None):
 		assert i is None or w is None
+		assert self.rank() == self.dim()	# points are columns otherwise
 		if i is not None:
 			i = array(i)
 			h, p, o = self._vectors(i)
@@ -346,6 +344,30 @@ the reciprocal grid size is always odd.  has same orientation as self
 			p=concatenate((zeros(xaxs), self.p)),
 			o=o,
 			U=U)
+			
+
+class NullGrid(Grid):
+	"""this overrides methods where numpy fails to treat shape 0 arrays the way we want.
+	
+a field over this is constant everywhere.  this is consistent with Numpy, where zero-dimensional arrays have a single value.
+"""
+	
+	def __init__(self, shape, o, p, h, U):
+		self.shape = tuple(shape)
+		self.h = array(h)
+		self.p = array(p)
+		self.o = array(o)
+		self.U = array(U)
+		assert self.h.size == 0
+		assert self.p.size == 0
+		assert self.U.shape[1] == 0
+		assert self.U.shape[0] == self.o.size
+		
+	def __str__(self):
+		return '<null Grid>'
+		
+	def W(self):
+		assert False	# points aren't defined
 		
 		
 	
@@ -366,7 +388,8 @@ class SampledField(ndarray):
 	def __new__(cls, ordinates, abscissae, label=None):
 		obj = asarray(ordinates).view(cls)
 		obj.abscissae = abscissae
-		assert obj.shape[-obj.abscissae.rank():] == obj.abscissae.shape
+		assert type(abscissae) is NullGrid or \
+			obj.shape[-obj.abscissae.rank():] == obj.abscissae.shape
 		if label is not None:
 			obj.label = label
 		return obj
@@ -376,7 +399,8 @@ class SampledField(ndarray):
 		self.abscissae = getattr(obj, 'abscissae', None)
 		self.coords = getattr(obj, 'coords', None)
 		if self.abscissae:
-			assert self.shape[-self.abscissae.rank():] == self.abscissae.shape
+			assert type(abscissae) is NullGrid or \
+			self.shape[-self.abscissae.rank():] == self.abscissae.shape
 			
 	def __str__(self):
 		return '<not yet implemented>'

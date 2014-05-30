@@ -2,6 +2,7 @@ from field import *
 
 x, y, z, s = [Grid.from_axes(q) for q in
 	[arange(2), 0.3*arange(3), pi+arange(5), [0, 17]]]
+N = Grid(shape=(), h=[], p=[], o=[1,2,3], U=empty((3,0)))
 R = x*y*z
 T = s*R
 f = SampledField(R.blank(), R);  f[:,:,:] = 1

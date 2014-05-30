@@ -28,7 +28,7 @@ The `*` operator on `Grid` is a cartesian product, so the same grid can be const
 	
 However, the points of `S` now lie in the plane, while `x` and `y` comprise points on the line, with no record of which corresponds to the first axis of `S` and which to the second.  We'd be better off constructing `S` the first way, and projecting out the axes with
 
-	x = S[:, None];  y = S[None, :]
+	x, y = S.axes()
 	
 Now `x` and `y` lie in the plane, and `x*y`, `y*x` and `S` are the same.
 
@@ -133,6 +133,8 @@ Degenerate grids
 So far, we have seen grids that cover a rectangle in the plane, a cube in space, or generally an n-prism in n-space.  The library is more general than this.  However, there are two special cases we have not considered.  These are a grid whose dimension is greater than its rank, and a grid that has only one point along some of its axes.  Or both: these are not mutally exclusive.
 
 A grid with only one point along an axis is treated fairly simply.  A field over such a grid is sampled normally along the axes with multiple points.  On the degenerate axis, is varies as sinc(2&pi;x/h), with the first zeros at &pm;h.  Even with one point, the grid still has a spacing, for this purpose.  If this field is sampled on a nondegenerate grid, the sinc function will actually be sampled.  This means that taking slices with spacing h, on grids of width h, then adding them back together, will reconstruct the bandwidth limited interpolant of the field that was sliced.
+
+Such grids can be constructed by subscription, e.g., S[2:3, :].  A subscription S[2, :] would create a low-rank grid: subscripting a field in this way constructs a constant field whose values are a slice instead of an integral.
 
 No degenerate grid can be constructed using `Grid.from_axes`.  There is no way to infer a reasonable step from an axis with a single point, and this is required even in degenerate grids.  However, `Grid.delta(x, h)` constructs a 1D delta grid at coordinate x with step h.
 
