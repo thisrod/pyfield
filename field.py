@@ -154,23 +154,19 @@ class Grid:
 			ix = (ix,)
 		assert len(ix) == self.rank()	# numpy missing indices n.y.i.
 		
-		# is there a simple test whether ix[x] has an integer type?
-		daxs = [i for i in range(self.rank()) if
-			ix[i] is not None and type(ix[i]) is not slice]
-		pt = array([ix[i] for i in daxs])
-		D = self._trunc(daxs)
-		D = D._clone(shape=(1,)*len(daxs), p=D.w(i=pt), o=D.W(i=pt))
-		
-		naxs = [i for i in range(self.rank()) if type(ix[i]) is slice]
-		assert all([ix[i].step is None for i in naxs])
-		low = array([bound(ix[i].start, self.shape[i], 0) for i in naxs])
-		high = array([bound(ix[i].stop, self.shape[i], self.shape[i]) for i in naxs])
-		N = self._trunc(naxs)
-		N = N._clone(shape=high - low, p=N.w(i=low), o=N.W(i=low))
-		
-		assert False	# this will get the axes in the wrong order
-		
-		return D*N
+		# build the result one axis at a time
+		section = Grid(shape=(), o=self.o, p=[], h=[], U=empty((self.dim(),0)))
+		for q, i in zip(self.axes(), ix):
+			if type(i) is slice:
+				assert i.step is None
+				low = bound(i.start, len(q), 0)
+				high = bound(i.stop, len(q), len(q))
+				section = section*q._clone(
+					shape=(high - low,), 
+					o=q.o+low*q.U[:,0]*q.h[0],
+					p=q.p+low*q.h)
+					
+		return section
 				
 			
 	#
@@ -353,6 +349,7 @@ a field over this is constant everywhere.  this is consistent with Numpy, where 
 """
 	
 	def __init__(self, shape, o, p, h, U):
+		# this is called when Grid.__new__ returns a NullGrid.
 		self.shape = tuple(shape)
 		self.h = array(h)
 		self.p = array(p)
@@ -399,7 +396,7 @@ class SampledField(ndarray):
 		self.abscissae = getattr(obj, 'abscissae', None)
 		self.coords = getattr(obj, 'coords', None)
 		if self.abscissae:
-			assert type(abscissae) is NullGrid or \
+			assert type(self.abscissae) is NullGrid or \
 			self.shape[-self.abscissae.rank():] == self.abscissae.shape
 			
 	def __str__(self):

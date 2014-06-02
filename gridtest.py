@@ -13,7 +13,7 @@ assert f[0,0,0] == 1
 # check index and coordinate functions
 
 e = array([[1,1,1],[1,3,2]]).T
-assert all(type(x) is Field for x in [f.i(), f.w(), f.W(), f.ww()])
+assert all(type(x) is Field for x in [f.i(), f.r(), f.R(), f.rr()])
 assert all(type(x) is ndarray for x in [R.i(w=e), R.w(i=e), R.W(i=3), R.ww(w=e)])
 assert allclose(R.w(), R.w(i=indices(R.shape)))
 assert allclose(R.w(W=e), e)
@@ -51,7 +51,7 @@ assert allclose(2*pi*abs(fftfreq(z.shape[0], z.h[0])).max(),
 assert allclose(R.rotated(U).reciprocal().w(), R.reciprocal().rotated(U).w())
 assert R.reciprocal().close(x.reciprocal()*y.reciprocal()*z.reciprocal())
 
-g = Field(ones(x.shape), x)
+g = SampledField(ones(x.shape), x)
 G = g.fft()
 
 # Rayleigh's theorem
