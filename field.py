@@ -299,7 +299,7 @@ the reciprocal grid size is always odd.  has same orientation as self
 		"""quick and dirty wavenumbers for q&d spectral methods"""
 		
 		return array(meshgrid(
-			*[2*pi*fftfreq(q.size, ptp(q)/(q.size-1)) for q in self.axes()],
+			*[2*pi*fftfreq(len(q), q.h[0]) for q in self.axes()],
 			indexing='ij'))
 		
 	#
@@ -486,8 +486,8 @@ minimum useful spectral method.
 		# rectangular grid, is hard. integrating the
 		# band-limited interpolant might be feasible.
 		
-		if self.rank() == self.dim() and \
-			self.dim() == abscissae.dim() and \
+		if self.abscissae.rank() == self.abscissae.dim() and \
+			self.abscissae.dim() == abscissae.dim() and \
 			abscissae.rank() == abscissae.dim():
 			return self._sampled_normal(abscissae)
 		else:
