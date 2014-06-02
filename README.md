@@ -136,7 +136,7 @@ A grid with only one point along an axis is treated fairly simply.  A field over
 
 Such grids can be constructed by subscription, e.g., S[2:3, :].  A subscription S[2, :] would create a low-rank grid: subscripting a field in this way constructs a constant field whose values are a slice instead of an integral.
 
-No degenerate grid can be constructed using `Grid.from_axes`.  There is no way to infer a reasonable step from an axis with a single point, and this is required even in degenerate grids.  However, `Grid.delta(x, h)` constructs a 1D delta grid at coordinate x with step h.
+`Grid.delta(x, h)` constructs a 1D delta grid at coordinate x with step h.  The default is h=0.  A grid with one point and a step of zero is treated as a sinc in the limit of zero width.  This means that it will give zero when sampled on any other grid; however, its values can still be plotted or extracted by indexing.
 
 A grid with rank less than its dimension is constructed by supplying `None` as a subscript.  We already saw this when `x` and `y` were constructed from `S`.  A field over this is treated as a constant over the missing axes in the common space.  For example, it might be a function of space in a dynamical simulation.  Another example is a field whose value is one of the grid coordinates, which is constant over the other coordinates.
 
