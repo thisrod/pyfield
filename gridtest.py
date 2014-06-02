@@ -10,6 +10,10 @@ f = SampledField(R.blank(), R);  f[:,:,:] = 1
 # check assignment worked
 assert f[0,0,0] == 1
 
+# check slices
+S1 = x*Grid.delta(0)*z
+S1 = x*Grid.delta(0, 0.5)*z
+
 # check index and coordinate functions
 
 e = array([[1,1,1],[1,3,2]]).T

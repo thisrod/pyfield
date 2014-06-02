@@ -48,7 +48,7 @@ class Grid:
 			o=origin)
 			
 	@classmethod
-	def delta(cls, x, h):
+	def delta(cls, x, h=0):
 		return cls(shape=(1,), h=[h], U=[1], p=[x], o=[x])
 	
 	@classmethod
