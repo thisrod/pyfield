@@ -148,6 +148,19 @@ Sampling on a low-rank grid integrates over missing axes.
 Subscripting a field with `None` causes it to be sampled on the grid derived from subscripting the abscissae with the same way.  For example, integration over the first axis is done by
 
 	f[None, :]
+	
+A low-rank grid can be converted to a shape-1 grid using through
+
+	(S[2,:]).through([1,2.5,pi])
+	
+The new axes are added before the existing ones, and have their index origins at zero.  The grid origin is set so that the existing axes are maintained, and the extension of the new grid plane in common space passes near `[1,2.5,pi]`.
+
+Grids can be rotated, or extended to a higher dimensional common space, using along.
+
+	S.along(T)
+	Grid.delta(5).along(x)
+
+	This returns a grid with the same spacing and index origin as S, but with the grid origin of T, oriented along the first S.rank() axes of T.
 
 
 Plotting
