@@ -9,8 +9,8 @@ from numpy import \
 	logical_not, logical_or, \
 	mean, meshgrid, nan, ndarray, newaxis, nonzero, \
 	ones, pi, prod, ptp, \
-	sign, sqrt, zeros, \
-	exp, sin, cos, tan, tensordot
+	sign, sqrt, squeeze, tensordot, zeros, \
+	exp, sin, cos, tan
 from numpy.random import rand, randn, seed
 from numpy.fft import fft, ifft, fftn, ifftn, fftfreq, fftshift
 from numpy.linalg import eig, norm, qr
