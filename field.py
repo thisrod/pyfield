@@ -49,7 +49,7 @@ class Grid:
 			
 	@classmethod
 	def delta(cls, x, h=0):
-		return cls(shape=(1,), h=[h], U=[1], p=[x], o=[x])
+		return cls(shape=(1,), h=[h], U=[[1]], p=[x], o=[x])
 	
 	@classmethod
 	def default(cls):
@@ -59,14 +59,17 @@ class Grid:
 	def __init__(self, shape, o, p, h, U):
 		# instance variables explained in geometry.tex
 		self.U = array(U, dtype=float)
-		assert allclose(dot(self.U.T, self.U), eye(self.rank()))
-		self.shape = tuple(int(n) for n in shape)
-		assert len(self.shape) == self.rank()
-		assert all(n>0 for n in self.shape)
-		self.h = array(h, dtype=float).reshape((self.rank(),))
-		assert (self.h>0).all()
-		self.p = array(p, dtype=float).reshape((self.rank(),))
-		self.o = array(o, dtype=float).reshape((self.dim(),))
+		r = self.rank()
+		assert allclose(dot(self.U.T, self.U), eye(r))
+		N = array(shape, dtype=int)
+		self.shape = tuple(N)
+		assert N.size == r
+		assert (N > 0).all()
+		self.h = array(h, dtype=float).reshape((r,))
+		assert (self.h >= 0).all()
+		assert logical_or(N == 1, self.h > 0).all()
+		self.p = array(p, dtype=float).reshape((r,))
+		self.o = array(o, dtype=float).reshape((r,))
 	
 	#
 	# basic properties
