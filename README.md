@@ -122,6 +122,8 @@ In general, with special relevance to sampling, a field is treated as the limite
 
 An important special case is a grid with shape 1 along some dimension.  Such a grid has a step, and can be constructed with `Grid.delta(x, h)`, or by indexing with `R[0:1,:,:]`.  On the degenerate axis, it varies as sinc(2&pi;x/h), with the first zeros at &pm;h.  This is consistent with the general rule that fields are limited bandwidth interpolants of their samples.  It means that taking slices with spacing h, on grids of width h, then adding them back together, will reconstruct a bandwidth limited interpolant of the original field.
 
+TODO implement `along` to make deriving an oblique delta grid less bodgy.
+
 A grid with one point and a step of zero is treated as a sinc in the limit of zero width; this is the default of `Grid.delta(x)` and `Grid.from_axes([x])`.  This will give zero when sampled on any other grid; however, its values can still be plotted or extracted by indexing.
 
 The corresponding assignment operation is `setsamples`
