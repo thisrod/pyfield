@@ -69,7 +69,7 @@ class Grid:
 		assert (self.h >= 0).all()
 		assert logical_or(N == 1, self.h > 0).all()
 		self.p = array(p, dtype=float).reshape((r,))
-		self.o = array(o, dtype=float).reshape((r,))
+		self.o = array(o, dtype=float).reshape((self.dim(),))
 	
 	#
 	# basic properties
