@@ -3,7 +3,7 @@ Field library
 
 by Rodney E. S. Polkinghorne
 
-A field is a scalar, vector or tensor quantity that depends on position and time.  This Python library exports a type `Field`, an `ndarray` containing samples of an array-valued quantity, that also records the points at which the samples were taken.  These points form a rectangular grid in R<sup>n</sup>.  Such an array can integrate, differentiate and Fourier transform itself, generate samples of white noise at its points, and so on.
+A field is a scalar, vector or tensor quantity that depends on position and time.  This Python library exports a `SampledField` type, being an `ndarray` containing samples of an array-valued quantity, that also records the points at which the samples were taken.  These points form a rectangular grid in R<sup>n</sup>.  Such an array can integrate, differentiate and Fourier transform itself, generate samples of white noise at its points, and so on.  Other representations, such as `SpectralField`, represent the same data in different ways.  Each of these can be regarded as an expansion over a different basis.
 
 The library aims to remove the accidental complexity from computing with fields, in order to spare scientific programers from bookeeping, to prevent large classes of bugs from occuring at all, and to allow the remaining code to address physical problems, and the remaining bugs to be removed by physical nous.
 
@@ -11,6 +11,9 @@ The current version of the library assumes that the quantity being sampled is an
 
 The library code is a draft.  Many user actions that ought to generate a meaningful exception instead cause an assertion to fail, and sometimes that assertion has a comment "n.y.i.", meaning not yet implemented.  However, this document should describe exactly what the user is allowed to do, and what the library should do in response, and the code should either do that or fail deliberately.  Please report exceptions to that.
 
+Concept: the limited bandwidth interpolant of f_i=sin(kn), -N<n<N, f_i=0 otherwise.  Do these span the same space as the sincs?  Yes, because the interpolants can be written as linear combinations of the sincs.
+
+Spectral derivatives might go nuts at the edges of a grid, due to Gibbs effect.  But this isn't an issue if the field goes smoothly to zero at the edges: it can be extended to a periodic field that is everywhere differentiable.
 
 Grids
 ---
@@ -42,7 +45,7 @@ An array of coodinates for all grid points in R<sup>n</sup> is given by
 
 and coordinates for the point with a known index, say `(1, 2)`, by
 
-	S.W(i=(1, 2))
+	S[1,2].W()
 
 A `Grid` constructed like this is parallel to the axes of R<sup>n</sup>, but more general grids can be derived by rotation, specified by an orthogonal matrix.
 
@@ -59,41 +62,37 @@ TODO Implement the full set of MetaFont transforms.
 
 TODO Grids in the Argand plane, complex h, shape is a Gaussian integer
 
-As well as the common coordinates returned by `W()`, each grid has a system of grid coordinates, returned by `w()`.  These are preserved by translations and rotations.
+As well as the common coordinates returned by `W()`, each grid has a system of grid coordinates.  These can be obtained by casting the grid to an ndarray.
 
-	S.w()
-	S.rotated(U).w()
-	S.translated((0, -pi)).w()
+	array(S)
+	array(S.rotated(U))
+	array(S.translated((0, -pi)))
 
-However, the method `shifted` translates the origin of the grid coordinates
+Grid coordinates are preserved by translations and rotations.  The method `shifted` translates the origin of the grid coordinates while leaving the common coordinates fixed
 
 	S.shifted((1,1)).w()
 
-The methods `W` and `w` can take an array of indices or of coordinates
-
-	allclose(S.w(), S.w(i=indices(S.shape)))
-	allclose(S.w(), S.w(W=S.W()))
-
 The method `i` calculates indices from coordinates
 
-	S.i(w=S.w())
+	S.i()
+	S.i(w=array(S))
 	S.i(W=S.W())
 
 These methods return a `Field` if called with no arguments or with a `Field`, and an `ndarray` if passed an `ndarray`.
 
-Grids and Fields have bounds, that extend half a grid step past the extreme points at each edge.
+A grid has notional bounds, that extend half a grid step past the extreme points at each edge.
 
-	one.bounds()
+	S.bounds()
 
-This has shape 2*one.rank().
+This has shape 2*one.rank().  This is most useful in telling the inverse fourier transform where to put the reconstructed field.
 
 
 Fields
 ---
 
-A `Field` is constructed from a `Grid` and a set of data sampled on it, as follows
+A `SampledField` is constructed from a `Grid` and a set of data sampled on it, as follows
 
-	one = Field(ones(S.shape), S)
+	one = SampledField(ones(S.shape), S)
 
 This is an `ndarray`, so we can do things like
 
@@ -101,9 +100,9 @@ This is an `ndarray`, so we can do things like
 
 In fact, the array `S.W()`, which can also be expressed as `one.R()`, is a field on `S`, so
 
-	r0 = (one.R()*one).S()/one.S()
+	r0 = (one.R()*one)[None]/one[None]
 
-is a complicated way to find the centre of mass of a rectangle.  The method `S` computes the integral of a `Field`.
+is a complicated way to find the centre of mass of a rectangle, in common coordinates.  Indexing a field with `None` computes its integral.
 
 When a field has more than one component, we need a convention about the order that the axes go in when the samples are represented as an array.  The convention is
 
@@ -111,55 +110,42 @@ other components*axis components*sample points.
 
 So, for example, samples of the gradient of the wavefunction of a spin 1/2 particle on a 4*5*6 grid would be stored in an array of shape 2*3*4*5*6.  The 2 is the spin components, and the 3 is the x, y and z components of the gradient vector.
 
+
+Sampling
+---
+
 Fields can be interpolated on other grids
 
 	a = one.sampled(T)
 
-Some points in `a` and `b` have been extrapolated; these samples have the value `nan`.  The corresponding assignment operation is `setsamples`
+In general, with special relevance to sampling, a field is treated as the limited bandwidth interpolant of the samples.  This is equivalent to adding up sinc functions at every grid point.  Extrapolated values take the values of the sincs outside the grid, which asymptote to zero with at least the reciprocal of the distance from the grid.
+
+An important special case is a grid with shape 1 along some dimension.  Such a grid has a step, and can be constructed with `Grid.delta(x, h)`, or by indexing with `R[0:1,:,:]`.  On the degenerate axis, it varies as sinc(2&pi;x/h), with the first zeros at &pm;h.  This is consistent with the general rule that fields are limited bandwidth interpolants of their samples.  It means that taking slices with spacing h, on grids of width h, then adding them back together, will reconstruct a bandwidth limited interpolant of the original field.
+
+A grid with one point and a step of zero is treated as a sinc in the limit of zero width; this is the default of `Grid.delta(x)` and `Grid.from_axes([x])`.  This will give zero when sampled on any other grid; however, its values can still be plotted or extracted by indexing.
+
+The corresponding assignment operation is `setsamples`
 
 	a[:,:] = 2
 	one.setsamples(a)
 	
-The values of `one` outside the bounds of `T` are nearly preserved.  The actual algorithm for setsamples is as follows.  It samples the lvalue on the grid of the rvalue, subtracts the result from the rvalue samples, interpolates that on the lvalue, and adds that to the lvalue samples.  In the case that the grids coincide, this reduces to assignment.
+The algorithm to do this is as follows.  The target of the assignment, the field `one` is sampled on `T`, the grid of the assigned value `a`.  This gives a set of samples on `T`, which are subtracted from the samples of `a`.  This difference is interpolated back on `R`, the grid of `one`, and the result added to the samples of `one`.
 
-Does setting samples on disjoint parts of a field commute?
-
-We can get an array of results by adding slices at close times to a field with a larger step.  Does assigning the slices to the field do the same thing?
+In the case that the grids coincide, this reduces to assignment.  There are some other desirable properties we should investigate.  Does setting samples on parts of a field commute, when the bounds of those parts don't overlap?  Also, an array of results can be constructed by adding slices at integration timesteps to an accumulator field with a larger step.  Does assigning the slices to the accumulator do the same thing, regardless of its initial value?
 
 
 Degenerate grids
 ---
 
-So far, we have seen grids that cover a rectangle in the plane, a cube in space, or generally an n-prism in n-space.  The library is more general than this.  However, there are two special cases we have not considered.  These are a grid whose dimension is greater than its rank, and a grid that has only one point along some of its axes.  Or both: these are not mutally exclusive.
+Grids are still more general: the dimension may exceed the rank.  Such low-rank grids can be constructed by subscription, e.g., S[2, :].  Fields over such a grid are constant over the missing axes.  Subscripting a field in this way constructs a field whose values are a slice of the subscripted field at the subscripts.
 
-A grid with only one point along an axis is treated fairly simply.  A field over such a grid is sampled normally along the axes with multiple points.  On the degenerate axis, is varies as sinc(2&pi;x/h), with the first zeros at &pm;h.  Even with one point, the grid still has a spacing, for this purpose.  If this field is sampled on a nondegenerate grid, the sinc function will actually be sampled.  This means that taking slices with spacing h, on grids of width h, then adding them back together, will reconstruct the bandwidth limited interpolant of the field that was sliced.
-
-Such grids can be constructed by subscription, e.g., S[2:3, :].  A subscription S[2, :] would create a low-rank grid: subscripting a field in this way constructs a constant field whose values are a slice instead of an integral.
-
-`Grid.delta(x, h)` constructs a 1D delta grid at coordinate x with step h.  The default is h=0.  A grid with one point and a step of zero is treated as a sinc in the limit of zero width.  This means that it will give zero when sampled on any other grid; however, its values can still be plotted or extracted by indexing.
-
-A grid with rank less than its dimension is constructed by supplying `None` as a subscript.  We already saw this when `x` and `y` were constructed from `S`.  A field over this is treated as a constant over the missing axes in the common space.  For example, it might be a function of space in a dynamical simulation.  Another example is a field whose value is one of the grid coordinates, which is constant over the other coordinates.
-
-There are some rules about such grids and sampling.  These ensure that delta grids and low-rank grids are round trip compatible: if we sample from one to the other and back again, we get the same field.  The rules when a delta field or a constant field is sampled are simple: they're treated as a delta function or a constant.  It is an error to sample a delta function on a grid that is not degenerate over the delta axes.  When a delta field is sampled on a delta grid, the interpolated value is the field value if the grid lies within the bounds of the field-delta grids still have a step along the degenerate axis, and the bounds are computed as usual, a box of width h about the single point.  Otherwise, the interpolated value is zero.  When an ordinary field is sample on a delta grid, a section through the field is interpolated.
+A grid with rank less than its dimension can also be constructed by supplying `None` as a subscript.  We already saw this when `x` and `y` were constructed from `S`.  For example, it might be a function of space in a dynamical simulation.  Another example is a field whose value is one of the grid coordinates, which is constant over the other coordinates.
 
 Sampling on a low-rank grid integrates over missing axes.
 
-Sampling from a low-rank grid assumes constant over missing axes.
-
-Subscripting a field causes it to be interpolated on the grid derived from subscripting the abscissae with the same way.  For example, integration over the first axis is done by sampling on a low-rank grid
+Subscripting a field with `None` causes it to be sampled on the grid derived from subscripting the abscissae with the same way.  For example, integration over the first axis is done by
 
 	f[None, :]
-
-
-Sampling
----
-
-The method `sampled` has an inverse, `setsamples`.
-
-	timeslice = Field(q, Grid.from_axes([t])*R)
-	results.setsamples(timeslice)
-
-These bear a similar relation to `__getitems__` and `__setitems__`.  
 
 
 Plotting
@@ -180,6 +166,10 @@ A rank 2 field can be plotted in greyscale with
 	
 and variations on this.  Positive and negative have the same meaning as in photography.
 
+A coloured phase plot of a complex field, as in ?, is made by
+
+	exp(z).argand()
+
 
 Spectral methods
 ---
@@ -194,7 +184,7 @@ This is a SpectralField, wheras ones is a SampledField; these are both subtypes 
 
 	allclose(ones, delta.ifft())
 
-The wavenumbers for which the elements of delta are coefficients are found by
+An array of the wavenumbers for which the elements of delta are coefficients are found by
 
 	delta.k()
 
@@ -206,7 +196,7 @@ which is equivalent to
 
 	zero = ones.D()
 
-A SpectralField records the bounds of the field from which it was tranformed.  These, along with the Grid of wavenumbers, allow ifft to reconstruct the original grid.
+A SpectralField records the orientation, bounds, and grid origin of the field from which it was tranformed.  These, along with the Grid of wavenumbers, allow ifft to reconstruct the original grid.
 
 How should even-sized grids be handled?  Should the reciprocal grid always be odd, with the last term possibly split between +f and -f, so that real fields are interpolated with real functions?
 
