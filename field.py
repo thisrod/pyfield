@@ -119,6 +119,19 @@ class Grid:
 			h = self.h[axs],
 			p = self.p[axs],
 			U = self.U[:,axs])
+			
+	#
+	# along and through
+	#
+	
+	def along(self, other):
+		return self._clone(o=other.o, U=other.U[:,:self.rank()])
+		
+	def through(self, x):
+		n = self.dim()-self.rank()
+		U, R = qr(concatenate((self.U,eye(self.dim())), axis=1))
+		return self * \
+			Grid.from_axes(*([[0]]*n)).rotated(U[:, self.rank():]).translated(x)
 
 
 	#
