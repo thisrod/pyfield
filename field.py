@@ -76,11 +76,9 @@ class Grid:
 	#
 	
 	def rank(self):
-		"return the rank of arrays of samples"
 		return self.U.shape[1]
 		
 	def dim(self):
-		"return the dimension of the common coordinate space"
 		return self.U.shape[0]
 		
 	def axes(self):
@@ -90,7 +88,7 @@ class Grid:
 		
 	def bounds(self):
 		N = array(self.shape)
-		return array([self.p, self.p+N]) - 0.5*self.h
+		return array([self.p - 0.5*self.h, self.p + (N-0.5)*self.h]) 
 
 	def __len__(self):
 		return prod(self.shape)
@@ -569,9 +567,11 @@ minimum useful spectral method.
 		self._section('gray')
 		
 	def _section(self, cm):
-		x, y = [array(q.w()).flatten() for q in self.abscissae.axes() if len(q)>1]
-		window =  (y[0], y[-1], x[0], x[-1])
-		imshow(squeeze(self), interpolation='nearest', extent=window, cmap=get_cmap(cm))
+		x, y = [q for q in self.abscissae.axes() if len(q)>1]
+		window =  (x*y).bounds().T.flatten()
+		imshow(squeeze(array(self)).T, interpolation='nearest',
+			origin='lower',
+			extent=tuple(window), cmap=get_cmap(cm))
 		
 
 	#
