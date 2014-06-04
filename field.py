@@ -15,9 +15,9 @@ class Grid:
 	#
 		
 	def __str__(self):
-		return "<grid " + " in R^" + str(self.dim()) + \
+		return "<grid " + " in R^" + str(self.dim) + \
 			" shape " + str(self.shape) + \
-			" over " + str([tuple(b) for b in self.bounds()]) + ">"
+			" over " + str([tuple(b) for b in self.bounds]) + ">"
 			
 	def __repr__(self):
 		return str(self)
@@ -59,7 +59,7 @@ class Grid:
 	def __init__(self, shape, o, p, h, U):
 		# instance variables explained in geometry.tex
 		self.U = array(U, dtype=float)
-		r = self.rank()
+		r = self.rank
 		assert allclose(dot(self.U.T, self.U), eye(r))
 		N = array(shape, dtype=int)
 		self.shape = tuple(N)
@@ -69,26 +69,26 @@ class Grid:
 		assert (self.h >= 0).all()
 		assert logical_or(N == 1, self.h > 0).all()
 		self.p = array(p, dtype=float).reshape((r,))
-		self.o = array(o, dtype=float).reshape((self.dim(),))
+		self.o = array(o, dtype=float).reshape((self.dim,))
 	
 	#
 	# basic properties
 	#
 	
-	def rank(self):
-		return self.U.shape[1]
-		
-	def dim(self):
-		return self.U.shape[0]
-		
-	def axes(self):
-		return [Grid(shape=self.shape[i:i+1], o=self.o,
+	def __getattr__(self, name):
+		if name in Grid._getters:
+			return Grid._getters[name](self)
+		else:
+			assert False
+	
+	_getters = {
+		'rank': lambda self: self.U.shape[1],
+		'dim': lambda self: self.U.shape[0],
+		'axes': lambda self: [Grid(shape=self.shape[i:i+1], o=self.o,
 			h=self.h[i:i+1], p=self.p[i:i+1], U=self.U[:,i:i+1])
-			for i in range(self.rank())]
-		
-	def bounds(self):
-		N = array(self.shape)
-		return array([self.p - 0.5*self.h, self.p + (N-0.5)*self.h]) 
+			for i in range(self.rank)],
+		'bounds': lambda self: array([self.p - 0.5*self.h, 
+			self.p + (array(self.shape)-0.5)*self.h]) }
 
 	def __len__(self):
 		return prod(self.shape)
@@ -101,9 +101,9 @@ class Grid:
 	def _vectors(self, A):
 		"return h, p,and  o, reshaped to broadcast over A"
 		tail = (1,)*(A.ndim-1)
-		return self.h.reshape((self.rank(),)+tail), \
-			self.p.reshape((self.rank(),)+tail), \
-			self.o.reshape((self.dim(),)+tail)
+		return self.h.reshape((self.rank,)+tail), \
+			self.p.reshape((self.rank,)+tail), \
+			self.o.reshape((self.dim,)+tail)
 			
 	def _clone(self, **args):
 		"return a Grid like self, but with some variables changed"
@@ -123,13 +123,13 @@ class Grid:
 	#
 	
 	def along(self, other):
-		return self._clone(o=other.o, U=other.U[:,:self.rank()])
+		return self._clone(o=other.o, U=other.U[:,:self.rank])
 		
 	def through(self, x):
-		n = self.dim()-self.rank()
-		U, R = qr(concatenate((self.U,eye(self.dim())), axis=1))
+		n = self.dim-self.rank
+		U, R = qr(concatenate((self.U,eye(self.dim)), axis=1))
 		return self * \
-			Grid.from_axes(*([[0]]*n)).rotated(U[:, self.rank():]).translated(x)
+			Grid.from_axes(*([[0]]*n)).rotated(U[:, self.rank:]).translated(x)
 
 
 	#
@@ -140,16 +140,16 @@ class Grid:
 		shape = self.shape + other.shape
 		h = concatenate((self.h, other.h))
 		p = concatenate((self.p, other.p))
-		if self.dim() == other.dim() and \
-			allclose(dot(self.U.T, other.U), zeros((self.rank(), other.rank()))):
+		if self.dim == other.dim and \
+			allclose(dot(self.U.T, other.U), zeros((self.rank, other.rank))):
 			return Grid(shape=shape, h=h, p=p,
 				o = dot(self.U, dot(self.U.T, self.o)) + \
 					dot(other.U, dot(other.U.T, other.o)),
 				U = concatenate((self.U, other.U), axis=1))
 		else:
-			U = zeros((self.dim()+other.dim(), self.rank()+other.rank()))
-			U[:self.dim(),:self.rank()] = self.U
-			U[self.dim():,self.rank():] = other.U
+			U = zeros((self.dim+other.dim, self.rank+other.rank))
+			U[:self.dim,:self.rank] = self.U
+			U[self.dim:,self.rank:] = other.U
 			return Grid(shape=shape, h=h, p=p,
 				o=concatenate((self.o, other.o)),
 				U=U)
@@ -166,11 +166,11 @@ class Grid:
 			
 		if type(ix) is not tuple:
 			ix = (ix,)
-		assert len(ix) == self.rank()	# numpy missing indices n.y.i.
+		assert len(ix) == self.rank	# numpy missing indices n.y.i.
 		
 		# build the result one axis at a time
-		section = Grid(shape=(), o=self.o, p=[], h=[], U=empty((self.dim(),0)))
-		for q, i in zip(self.axes(), ix):
+		section = Grid(shape=(), o=self.o, p=[], h=[], U=empty((self.dim,0)))
+		for q, i in zip(self.axes, ix):
 			if type(i) is slice:
 				assert i.step is None
 				low = bound(i.start, len(q), 0)
@@ -204,7 +204,7 @@ class Grid:
 		
 	def W(self, i=None, w=None):
 		assert i is None or w is None
-		assert self.rank() == self.dim()	# points are columns otherwise
+		assert self.rank == self.dim	# points are columns otherwise
 		if i is not None:
 			i = array(i)
 			h, p, o = self._vectors(i)
@@ -258,8 +258,8 @@ class Grid:
 		
 	def rotated(self, V, centre=None):
 		if centre is None:
-			centre = zeros(self.rank())
-		assert V.shape == 2*(self.dim(),)
+			centre = zeros(self.rank)
+		assert V.shape == 2*(self.dim,)
 		Rc = self.W(w=centre)
 		return self._clone(o=Rc+dot(V, self.o-Rc), U=dot(V,self.U))
 	
@@ -307,13 +307,13 @@ the reciprocal grid size is always odd.  has same orientation as self
 """
 		ns = array([n+(n+1)%2 for n in self.shape])
 		h=2*pi/(self.shape*self.h)
-		return Grid(shape=ns, h=h, U=self.U, p=-h*((ns-1)//2), o=zeros(self.dim()))
+		return Grid(shape=ns, h=h, U=self.U, p=-h*((ns-1)//2), o=zeros(self.dim))
 		
 	def kspace(self):
 		"""quick and dirty wavenumbers for q&d spectral methods"""
 		
 		return array(meshgrid(
-			*[2*pi*fftfreq(len(q), q.h[0]) for q in self.axes()],
+			*[2*pi*fftfreq(len(q), q.h[0]) for q in self.axes],
 			indexing='ij'))
 		
 	#
@@ -324,7 +324,7 @@ the reciprocal grid size is always odd.  has same orientation as self
 		# integrate: should allow axes to be picked
 		# the method ndarray.sum returns an ndarray, not a Field,
 		# so this doesn't trigger shape checks.
-		return prod(self.h)*ordinates.sum(tuple(range(-self.rank(),0)))
+		return prod(self.h)*ordinates.sum(tuple(range(-self.rank,0)))
 		
 	#
 	# misc
@@ -342,9 +342,9 @@ the reciprocal grid size is always odd.  has same orientation as self
 		U = self.U
 		o = self.o
 		xaxs = 0
-		for i in range(other.rank()):
+		for i in range(other.rank):
 			prp = dot(U, dot(U.T, other.U[:,i]))
-			if not allclose(prp, zeros(self.dim())):
+			if not allclose(prp, zeros(self.dim)):
 				prp = prp/norm(prp)
 				U = concatenate((prp.reshape((-1,1)), U), axis=1)
 				o += (dot(prp, other.o-o)-h*n)*prp
@@ -400,7 +400,7 @@ class SampledField(ndarray):
 		obj = asarray(ordinates).view(cls)
 		obj.abscissae = abscissae
 		assert type(abscissae) is NullGrid or \
-			obj.shape[-obj.abscissae.rank():] == obj.abscissae.shape
+			obj.shape[-obj.abscissae.rank:] == obj.abscissae.shape
 		if label is not None:
 			obj.label = label
 		return obj
@@ -411,7 +411,7 @@ class SampledField(ndarray):
 		self.coords = getattr(obj, 'coords', None)
 		if self.abscissae:
 			assert type(self.abscissae) is NullGrid or \
-			self.shape[-self.abscissae.rank():] == self.abscissae.shape
+			self.shape[-self.abscissae.rank:] == self.abscissae.shape
 			
 	def __str__(self):
 		return '<not yet implemented>'
@@ -500,9 +500,9 @@ minimum useful spectral method.
 		# rectangular grid, is hard. integrating the
 		# band-limited interpolant might be feasible.
 		
-		if self.abscissae.rank() == self.abscissae.dim() and \
-			self.abscissae.dim() == abscissae.dim() and \
-			abscissae.rank() == abscissae.dim():
+		if self.abscissae.rank == self.abscissae.dim and \
+			self.abscissae.dim == abscissae.dim and \
+			abscissae.rank == abscissae.dim:
 			return self._sampled_normal(abscissae)
 		else:
 			return self._sampled_special(abscissae)
@@ -518,9 +518,9 @@ minimum useful spectral method.
 		
 		# this only handles the normal -> 1e case
 		S =  self.abscissae
-		assert S.rank() == S.dim()
-		assert S.dim() == abscissae.dim()
-		assert abscissae.dim() - abscissae.rank() == 1
+		assert S.rank == S.dim
+		assert S.dim == abscissae.dim
+		assert abscissae.dim - abscissae.rank == 1
 		
 		# sample with my axis in place of the missing one
 		
@@ -540,8 +540,8 @@ minimum useful spectral method.
 	
 		# this only handles assigning delta slices on the first axis
 		S, R = self.abscissae, fld.abscissae
-		assert S.rank() == 4
-		assert S.dim() == 4
+		assert S.rank == 4
+		assert S.dim == 4
 		assert allclose(S.U, R.U)
 		assert fld.shape[0] == 1
 		assert fld.shape.count(1) == 1
@@ -567,8 +567,8 @@ minimum useful spectral method.
 		self._section('gray')
 		
 	def _section(self, cm):
-		x, y = [q for q in self.abscissae.axes() if len(q)>1]
-		window =  (x*y).bounds().T.flatten()
+		x, y = [q for q in self.abscissae.axes if len(q)>1]
+		window =  (x*y).bounds.T.flatten()
 		imshow(squeeze(array(self)).T, interpolation='nearest',
 			origin='lower',
 			extent=tuple(window), cmap=get_cmap(cm))

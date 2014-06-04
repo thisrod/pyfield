@@ -11,9 +11,9 @@ f = SampledField(R.blank(), R);  f[:,:,:] = 1
 assert f[0,0,0] == 1
 
 # check bounds
-assert R.bounds().shape == (2, 3)
-assert allclose(x.bounds().flatten(), [-0.5, 1.5])
-assert allclose(y.bounds().flatten(), [-0.15, 0.6+0.15])
+assert R.bounds.shape == (2, 3)
+assert allclose(x.bounds.flatten(), [-0.5, 1.5])
+assert allclose(y.bounds.flatten(), [-0.15, 0.6+0.15])
 
 # check slices
 S1 = x*Grid.delta(0)*z
