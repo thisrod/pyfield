@@ -178,14 +178,14 @@ If `x` has multiple components, these are plotted as separate lines.
 
 A rank 2 field can be plotted in greyscale with
 
-	(x*y).positive()
-	(x*y).negative(interpolation='nearest')
+	(x*y).section_positive()
+	(x*y).section_negative(interpolation='nearest')
 	
 and variations on this.  Positive and negative have the same meaning as in photography.
 
 A coloured phase plot of a complex field, as in ?, is made by
 
-	exp(z).argand()
+	exp(z).section_argand()
 
 
 Spectral methods

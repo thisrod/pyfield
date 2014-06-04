@@ -76,6 +76,6 @@ assert f.support().close(f.abscissae)
 # plotting
 figure()
 h = SampledField(arange(6).reshape((2,3)), x*y)
-h.positive()
+h.section_positive()
 xlabel('x');  ylabel('y')
 savefig('ramp.pdf')
