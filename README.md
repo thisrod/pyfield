@@ -110,6 +110,8 @@ other components*axis components*sample points.
 
 So, for example, samples of the gradient of the wavefunction of a spin 1/2 particle on a 4*5*6 grid would be stored in an array of shape 2*3*4*5*6.  The 2 is the spin components, and the 3 is the x, y and z components of the gradient vector.
 
+TODO Broadcasting in `Field` can be smarter than in `ndarray`, because axes can be identified in common coordinates.  The usual broadcasting rules can apply to array fields.
+
 
 Sampling
 ---
