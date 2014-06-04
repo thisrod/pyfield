@@ -10,6 +10,10 @@ f = SampledField(R.blank(), R);  f[:,:,:] = 1
 # check assignment worked
 assert f[0,0,0] == 1
 
+# check bounds
+assert R.bounds().shape == (2, 3)
+assert allclose(x.bounds().flatten(), [-0.5, 1.5])
+
 # check slices
 S1 = x*Grid.delta(0)*z
 S1 = x*Grid.delta(0, 0.5)*z
@@ -67,3 +71,9 @@ g = SampledField(ones(x.shape), x)
 
 # support
 assert f.support().close(f.abscissae)
+
+# plotting
+figure()
+h = SampledField(arange(6).reshape((2,3)), x*y)
+h.positive()
+savefig('ramp.pdf')

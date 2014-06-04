@@ -89,8 +89,8 @@ class Grid:
 			for i in range(self.rank())]
 		
 	def bounds(self):
-		n = array(self.shape)
-		return array([self.p-0.5*self.h, self.p+(n+0.5)*self.h])
+		N = array(self.shape)
+		return array([self.p, self.p+N]) - 0.5*self.h
 
 	def __len__(self):
 		return prod(self.shape)
@@ -396,7 +396,7 @@ def load_field(lbl):
 
 class SampledField(ndarray):
 	
-	# FIXME binary ufuncs should check the grids are the same
+	# FIXME broadcasting
 	
 	def __new__(cls, ordinates, abscissae, label=None):
 		obj = asarray(ordinates).view(cls)
@@ -429,7 +429,7 @@ class SampledField(ndarray):
 			return(self.view(ndarray).__getitem__(ixs))
 	
 	#
-	# grid methods
+	# abscissae
 	#
 	
 	def r(self):
@@ -556,6 +556,22 @@ minimum useful spectral method.
 		i = 1 + int((dot(u, R.o-S.o)-R.h[0]/2)/S.h[0])
 		if I == i+1:
 			self[i:I,:,:,:] = fld
+
+	
+	#
+	# plotting
+	#
+	
+	def negative(self):
+		self._section('gray_r')
+	
+	def positive(self):
+		self._section('gray')
+		
+	def _section(self, cm):
+		x, y = [array(q.w()).flatten() for q in self.abscissae.axes() if len(q)>1]
+		window =  (y[0], y[-1], x[0], x[-1])
+		imshow(squeeze(self), interpolation='nearest', extent=window, cmap=get_cmap(cm))
 		
 
 	#

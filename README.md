@@ -11,7 +11,7 @@ The current version of the library assumes that the quantity being sampled is an
 
 The library code is a draft.  Many user actions that ought to generate a meaningful exception instead cause an assertion to fail, and sometimes that assertion has a comment "n.y.i.", meaning not yet implemented.  However, this document should describe exactly what the user is allowed to do, and what the library should do in response, and the code should either do that or fail deliberately.  Please report exceptions to that.
 
-Concept: the limited bandwidth interpolant of f_i=sin(kn), -N<n<N, f_i=0 otherwise.  Do these span the same space as the sincs?  Yes, because the interpolants can be written as linear combinations of the sincs.
+Concept: the limited bandwidth interpolant of fi=sin(kn), [-N,N], fi=0 otherwise.  Do these span the same space as the sincs?  Yes, because the interpolants can be written as linear combinations of the sincs.
 
 Spectral derivatives might go nuts at the edges of a grid, due to Gibbs effect.  But this isn't an issue if the field goes smoothly to zero at the edges: it can be extended to a periodic field that is everywhere differentiable.
 

@@ -17,7 +17,7 @@ from numpy.linalg import eig, norm, qr
 
 # work around Pyenv breaking the OSX backend for Matplotlib
 import matplotlib; matplotlib.use("Agg")
-from matplotlib.pyplot import colorbar, contour, contourf, figure, imshow, legend, loglog, plot, savefig, semilogy, subplot, text, title, xlabel, ylabel, xlim, ylim, xticks, yticks
+from matplotlib.pyplot import colorbar, contour, contourf, figure, get_cmap, imshow, legend, loglog, plot, savefig, semilogy, subplot, text, title, xlabel, ylabel, xlim, ylim, xticks, yticks
 
 def sciform(xs):
 	"return a collection like xs, with numeric elements replaced by strings.  Also an exponent term"
