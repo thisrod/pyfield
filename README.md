@@ -18,7 +18,7 @@ Spectral derivatives might go nuts at the edges of a grid, due to Gibbs effect. 
 Grids
 ---
 
-The mechanics of recording coordinates are done by a class `Grid`, representing a rectangular grid of points in R<sup>n</sup>, along with a system of coordinates.  The grid need not be aligned with the usual axes or start at the origin: we can represent a skew plane in space, and things like that.
+The mechanics of recording coordinates are done by a class `Grid`, representing a rectangular grid of points in R<sup>n</sup>, along with a system of coordinates.  The grid need not be aligned with the usual axes or start at the origin: we can represent a skew plane in space, and things like that.  If one regards R<sup>n</sup> as an address space, and a field as data stored in memory, then grids are pointers to and arrays of that data, and grid geometry plays the role of pointer arithmetic.
 
 At `Grid` is usually constructed from its axes, as
 
@@ -87,6 +87,27 @@ A grid has notional bounds, that extend half a grid step past the extreme points
 This has shape 2*one.rank().  This is most useful in telling the inverse fourier transform where to put the reconstructed field.
 
 
+Subscripting
+---
+
+Grids can be subscripted in a variety of ways.  Section means a grid with one point and step 0, while projection means a low-rank grid.
+
+<table>
+<tr><th>subscript type</th><th>effect</th></tr>
+<tr><td>integer</td><td>section by index</td></tr>
+<tr><td>integer slice</td><td>subgrid by index</td></tr>
+<tr><td>singleton "</td><td>sinc subgrid</td></tr>
+<tr><td>float</td><td>section by grid coordinates</td></tr>
+<tr><td>float slice</td><td>subgrid by grid coordinates, same step, symmetric in interval defined by slice</td></tr>
+<tr><td>ends nearly equal</td><td>sinc subgrid at coordinate</td></tr>
+<tr><td>Grid</td><td>God knows</td></tr>
+<tr><td>1D array</td><td>grid subscripted with array elements</td></tr>
+<tr><td>ndarray</td><td>array of grids, with lists of subscripts along last axis of array</td></tr>
+</table>
+
+It is an error to subscript with a mixture of ints and floats.  Note that fully subscripting a grid gives a zero-dimensional section.  Subscripting a field with this gives a field with a value at one point, which, under the semantics of ndarras, is nearly equivalent to the value.
+
+
 Fields
 ---
 
@@ -116,6 +137,8 @@ TODO Broadcasting in `Field` can be smarter than in `ndarray`, because axes can 
 Sampling
 ---
 
+Subscripting a `Field` with a `Grid` causes it to be resampled on that grid.  Other subscripts are given to the absicssae, and the field resampled on the resulting grid.
+
 Fields can be interpolated on other grids
 
 	a = one.sampled(T)
@@ -123,8 +146,6 @@ Fields can be interpolated on other grids
 In general, with special relevance to sampling, a field is treated as the limited bandwidth interpolant of the samples.  This is equivalent to adding up sinc functions at every grid point.  Extrapolated values take the values of the sincs outside the grid, which asymptote to zero with at least the reciprocal of the distance from the grid.
 
 An important special case is a grid with shape 1 along some dimension.  Such a grid has a step, and can be constructed with `Grid.delta(x, h)`, or by indexing with `R[0:1,:,:]`.  On the degenerate axis, it varies as sinc(2&pi;x/h), with the first zeros at &pm;h.  This is consistent with the general rule that fields are limited bandwidth interpolants of their samples.  It means that taking slices with spacing h, on grids of width h, then adding them back together, will reconstruct a bandwidth limited interpolant of the original field.
-
-TODO implement `along` to make deriving an oblique delta grid less bodgy.
 
 A grid with one point and a step of zero is treated as a sinc in the limit of zero width; this is the default of `Grid.delta(x)` and `Grid.from_axes([x])`.  This will give zero when sampled on any other grid; however, its values can still be plotted or extracted by indexing.
 
