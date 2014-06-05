@@ -560,11 +560,11 @@ minimum useful spectral method.
 	# plotting
 	#
 	
-	def section_negative(self):
-		self._section('gray_r')
-	
 	def section_positive(self):
 		self._section('gray')
+	
+	def section_negative(self):
+		self._section('gray_r')
 		
 	def _section(self, cm):
 		x, y = [q for q in self.abscissae.axes if len(q)>1]
