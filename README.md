@@ -20,7 +20,7 @@ Spectral derivatives might go nuts at the edges of a grid, due to Gibbs effect. 
 Grids
 ---
 
-The mechanics of recording coordinates are done by a class `Grid`, representing a rectangular grid of points in R<sup>n</sup>, along with a system of coordinates.  The grid need not be aligned with the usual axes or start at the origin: we can represent a skew plane in space, and things like that.  If one regards R<sup>n</sup> as an address space, and a field as data stored in memory, then grids are pointers to and arrays of that data, and grid geometry plays the role of pointer arithmetic.
+The class `Grid` represents a rectangular grid of points in R<sup>n</sup> and a system of coordinates for them.  The grid need not be aligned with the usual axes of R<sup>n</sup> or start from the origin: the points might lie on a skew plane in space, for example.  Grids understand the relations between the points at which different fields are sampled.  If one regards R<sup>n</sup> as an address space, and a field as data stored in memory, then grids are pointers to and arrays of that data, and grid geometry plays the role of pointer arithmetic.
 
 At `Grid` is usually constructed from its axes, as
 
@@ -31,11 +31,11 @@ The `*` operator on `Grid` is a cartesian product, so the same grid can be const
 	x, y = Grid(0.1*arange(10)), Grid(pi+0.5*arange(20))
 	S = x*y
 	
-However, the points of `S` now lie in the plane, while `x` and `y` comprise points on the line, with no record of which corresponds to the first axis of `S` and which to the second.  We'd be better off constructing `S` the first way, and projecting out the axes with
+However, the points of `S` now lie in the plane, while `x` and `y` comprise points on the line, with no record of which corresponds to the first axis of `S` and which to the second.  It would usually be better to constructing `S` the first way, then project out the axes with
 
 	x, y = S.axes
 	
-Now `x` and `y` lie in the plane, and `x*y`, `y*x` and `S` are the same.
+Now `x` and `y` lie in the plane, and `x*y`, `y*x` and `S` are the same.  
 
 FIXME describe the precise rules for * later on
 
@@ -93,8 +93,28 @@ A grid has notional bounds, that extend half a grid step past the extreme points
 This has shape 2*one.rank().  This is most useful in telling the inverse fourier transform where to put the reconstructed field.
 
 
+Common coordinates
+---
+
+A grid with dimension n represents points in the space R<sup>n</sup>.  Each grid has its own set of grid coordinates, but coordinates in this space are common to all grids with the same dimension.
+
+The precise rules for cartesian products are as follows.  If all factors share the same dimension, and their axes are all orthogonal, then the product has the same dimension, the axes are preserved, and the origin of the product has the same component along each axis as did the origin of the factor from which that axis came.
+
+Otherwise, the dimension of the product grid is the sum of the dimensions of the factors, and the orientation of the axes is preserved in their subspaces.
+
+This should possibly be generalised for sections, so that the product of two intersecting lines is a plane.  It isn't clear how that would work: the product of those lines could have a rank twice its dimension!
+
+
 Subscripting
 ---
+
+This is getting complicated.  There is a different way of factoring the classes, which would simplify some things.  A `Grid` represents a basis for a space of functions of R<sup>n</sup>, and a `Field` is simply an array of coefficients of those functions.  Resampling would mean expanding over the new basis.  (Basis isn't the right word, because it isn't complete.)  So, for example, a `SamplingGrid` represents a basis of sinc functions, and a `ReciprocalGrid` represents the bounded complex exponentials that span the same space.  In this picture, it makes total sense that a Fourier grid remembers its bounds!  This pushes even more of the machinery into the grid classes.
+
+This also allows some things to be simpler and more general: for instance, a Fourier transform is a resampling on a `ReciprocalGrid`, and we could construct a cartesian product of a `ReciprocalGrid` on some axes and `SamplingGrid` on the others, perhaps to represent wavenumbers as a function of time.  The model even extends to wavelet and Gabor frames, coherent states and Fock states!  But what about finite difference formulae, and other things that aren't easily expressed in terms of bases?
+
+In this model, there are two ways to subscript a field.  We might want to extract certain coefficients, which we could do with an index, or an array of indices.  The semantics of this are the same as for ndarrays.  We might also want to expand over a different basis, which can be done by subscripting with the new grid.
+
+
 
 Grids can be subscripted in a variety of ways.  Section means a grid with one point and step 0, while projection means a low-rank grid.
 
