@@ -190,12 +190,14 @@ class Grid:
 	# special case for null grids
 		
 	def w(self, i=None, W=None):
+		# TODO de
 		assert i is None or W is None
 		if i is not None:
 			i = array(i)
 			h, p, o = self._vectors(i)
 			return p + h*i
 		if W is not None:
+			# TODO should a section axis return zero?
 			W = array(W)
 			h, p, o = self._vectors(W)
 			return p + tensordot(self.U.T, W-o, 1)		
@@ -225,7 +227,9 @@ class Grid:
 		if W is not None:
 			W = array(W)
 			h, p, o = self._vectors(W)
-			return tensordot(self.U.T, W-o, 1)/h
+			ix = tensordot(self.U.T, W-o, 1)/h
+			ix[self.h==0,::] = 0
+			return ix
 		else:
 			return SampledField(indices(self.shape), self)
 		
@@ -518,11 +522,14 @@ minimum useful spectral method.
 			return self._sampled_special(abscissae)
 			
 	def _sampled_normal(self, abscissae):
-	
-		return SampledField(
-			map_coordinates(self, self.abscissae.i(W=abscissae.W()),
-				cval=nan),
-			abscissae)
+		# sections complicate this
+		if self.abscissae.spans(abscissae):
+			return SampledField(
+				map_coordinates(self, self.abscissae.i(W=abscissae.W()),
+					cval=nan),
+				abscissae)
+		else:
+			return 0*abscissae.blank()
 			
 	def _sampled_special(self, abscissae):
 		

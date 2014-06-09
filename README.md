@@ -84,6 +84,8 @@ The method `i` calculates indices from coordinates
 
 These methods return a `Field` if called with no arguments or with a `Field`, and an `ndarray` if passed an `ndarray`.
 
+When a section or low-rank grid is asked to find `i` and `w` are given common coordinates, these are projected orthogonally onto the grid's span.
+
 A grid has notional bounds, that extend half a grid step past the extreme points at each edge.
 
 	S.bounds()

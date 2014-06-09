@@ -22,9 +22,12 @@ assert R.spans(rx*Grid.delta(0).along(ry)*rz)
 assert R.spans(rx*ry*rz)
 assert not (rx*Grid.delta(0).along(ry)).spans(R)
 
+# test index projection
+assert not isnan((rx*Grid.delta(0).along(ry)).i(W=R.W())).any()
+
 # check slices
 S1 = x*Grid.delta(0)*z
-S1 = x*Grid.delta(0, 0.5)*z
+S2 = x*Grid.delta(0, 0.5)*z
 
 # check index and coordinate functions
 
