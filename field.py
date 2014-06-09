@@ -272,8 +272,18 @@ class Grid:
 		savez('fields.npz', **ftab)
 		
 	#
-	# comparision
+	# comparison
 	#
+	
+	def spans(self, other):
+		assert self.dim == other.dim
+		if other.rank == 1:	# meshgrid barfs
+			box = other.bounds
+		else:
+			box = meshgrid(*other.bounds.T, indexing='ij')
+		vertices = other.W(array(box))
+		P = dot(self.U, self.U.T)
+		return allclose(tensordot(P, vertices, axes=1), vertices)
 		
 	def __eq__(self, other):
 		assert False	# testing floats for equality is a sin

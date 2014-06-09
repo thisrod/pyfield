@@ -15,6 +15,13 @@ assert R.bounds.shape == (2, 3)
 assert allclose(x.bounds.flatten(), [-0.5, 1.5])
 assert allclose(y.bounds.flatten(), [-0.15, 0.6+0.15])
 
+# spans
+
+rx, ry, rz = R.axes
+assert R.spans(rx*Grid.delta(0).along(ry)*rz)
+assert R.spans(rx*ry*rz)
+assert not (rx*Grid.delta(0).along(ry)).spans(R)
+
 # check slices
 S1 = x*Grid.delta(0)*z
 S1 = x*Grid.delta(0, 0.5)*z
