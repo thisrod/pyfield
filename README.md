@@ -3,7 +3,9 @@ Field library
 
 by Rodney E. S. Polkinghorne
 
-A field is a scalar, vector or tensor quantity that depends on position and time.  This Python library exports a `SampledField` type, being an `ndarray` containing samples of an array-valued quantity, that also records the points at which the samples were taken.  These points form a rectangular grid in R<sup>n</sup>.  Such an array can integrate, differentiate and Fourier transform itself, generate samples of white noise at its points, and so on.  Other representations, such as `SpectralField`, represent the same data in different ways.  Each of these can be regarded as an expansion over a different basis.
+A field is a scalar, vector or tensor quantity that depends on position and time.  This Python library exports a `SampledField` type, being an `ndarray` containing samples of an array-valued quantity, that also records the points at which the samples were taken.  These points form a rectangular grid in R<sup>n</sup>.  Such an array can integrate, differentiate and Fourier transform itself, generate samples of white noise at its points, and so on.  Other representations, such as `SpectralField`, represent the same data in different ways.
+
+The classes can be regarded as expansions of the same field over different bases.  A `SampledField` expands over sinc functions, a `SpectralField` expands over complex exponentials, and so on.  These bases are indexed by a `Grid`.
 
 The library aims to remove the accidental complexity from computing with fields, in order to spare scientific programers from bookeeping, to prevent large classes of bugs from occuring at all, and to allow the remaining code to address physical problems, and the remaining bugs to be removed by physical nous.
 
@@ -31,7 +33,7 @@ The `*` operator on `Grid` is a cartesian product, so the same grid can be const
 	
 However, the points of `S` now lie in the plane, while `x` and `y` comprise points on the line, with no record of which corresponds to the first axis of `S` and which to the second.  We'd be better off constructing `S` the first way, and projecting out the axes with
 
-	x, y = S.axes()
+	x, y = S.axes
 	
 Now `x` and `y` lie in the plane, and `x*y`, `y*x` and `S` are the same.
 
@@ -61,6 +63,8 @@ is a grid similar to `S`, but starting from the origin of the plane.
 TODO Implement the full set of MetaFont transforms.
 
 TODO Grids in the Argand plane, complex h, shape is a Gaussian integer
+
+TODO Specify `spans`
 
 As well as the common coordinates returned by `W()`, each grid has a system of grid coordinates.  These can be obtained by casting the grid to an ndarray.
 
