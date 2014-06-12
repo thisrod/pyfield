@@ -422,6 +422,7 @@ class SampledField(ndarray):
 	def __array_finalize__(self, obj):
 		if obj is None: return
 		self.abscissae = getattr(obj, 'abscissae', None)
+		# FIXME is coords used anywhere?
 		self.coords = getattr(obj, 'coords', None)
 		if self.abscissae:
 			assert type(self.abscissae) is NullGrid or \

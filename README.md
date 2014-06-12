@@ -3,6 +3,11 @@ Field library
 
 by Rodney E. S. Polkinghorne
 
+	subscripting a grid with a grid (sample coordinate field)
+	does this work with general bases?
+	indexing lvalues with masks
+	identifying a grid with a field where coefficents equal coordinates
+
 A field is a scalar, vector or tensor quantity that depends on position and time.  This Python library exports a `SampledField` type, being an `ndarray` containing samples of an array-valued quantity, that also records the points at which the samples were taken.  These points form a rectangular grid in R<sup>n</sup>.  Such an array can integrate, differentiate and Fourier transform itself, generate samples of white noise at its points, and so on.  Other representations, such as `SpectralField`, represent the same data in different ways.
 
 The classes can be regarded as expansions of the same field over different bases.  A `SampledField` expands over sinc functions, a `SpectralField` expands over complex exponentials, and so on.  These bases are indexed by a `Grid`.
@@ -15,29 +20,36 @@ The library code is a draft.  Many user actions that ought to generate a meaning
 
 Concept: the limited bandwidth interpolant of fi=sin(kn), [-N,N], fi=0 otherwise.  Do these span the same space as the sincs?  Yes, because the interpolants can be written as linear combinations of the sincs.
 
-Spectral derivatives might go nuts at the edges of a grid, due to Gibbs effect.  But this isn't an issue if the field goes smoothly to zero at the edges: it can be extended to a periodic field that is everywhere differentiable.
 
-Grids
+Grids and fields
 ---
 
-The class `Grid` represents a rectangular grid of points in R<sup>n</sup> and a system of coordinates for them.  The grid need not be aligned with the usual axes of R<sup>n</sup> or start from the origin: the points might lie on a skew plane in space, for example.  Grids understand the relations between the points at which different fields are sampled.  If one regards R<sup>n</sup> as an address space, and a field as data stored in memory, then grids are pointers to and arrays of that data, and grid geometry plays the role of pointer arithmetic.
+The simplest representation of a field is an array of the values it takes at points on a rectangular grid.  The library implements this with the class `SamplingGrid`.  This represents a grid of points in R<sup>n</sup>, and a system of coordinates aligned with the grid axes.  These need not be aligned with the usual axes of R<sup>n</sup>, and the origin need not be a point of the grid.
 
-At `Grid` is usually constructed from its axes, as
+The superclass constructor `Grid` returns a `SamplingGrid`.  The usual way to construct one is from arrays of the points on its axes, as
 
-	S = Grid.from_axes(0.1*arange(3), pi+0.5*arange(4))
+	S = Grid(0.1*arange(3), pi+0.5*arange(4))
 
-The `*` operator on `Grid` is a cartesian product, so the same grid can be constructed with
+The `*` operator acts as a cartesian product on `Grid`, so the same grid can be constructed with
 
 	x, y = Grid(0.1*arange(10)), Grid(pi+0.5*arange(20))
 	S = x*y
 	
-However, the points of `S` now lie in the plane, while `x` and `y` comprise points on the line, with no record of which corresponds to the first axis of `S` and which to the second.  It would usually be better to constructing `S` the first way, then project out the axes with
+However, the points of `S` now lie in the plane, while `x` and `y` comprise points on the line.  This prevents the computer from associating `x` with the first axis of `S` and `y` with the second.  For that reason, it is better to construct the grid the first way, then project out `x` and `y` with
 
 	x, y = S.axes
 	
-Now `x` and `y` lie in the plane, and `x*y`, `y*x` and `S` are the same.  
+Now `x` and `y` lie in the plane, so `x*y` and `y*x` both reconstruct `S`.  
 
-FIXME describe the precise rules for * later on
+A `Field` is an array of samples on a grid.  It can be constructed as
+
+	g = sin(Field(x))
+	
+Here, `Field(x)` constructs a field whose value is the coordinate x.  The coordinate grid `x` is stored as `g.abscissae`.  It would be nice to say, `sin(x)`, but implementing that in Python is too complicated.  It would also be nice to say, `Field(x) + Field(y)`, but the terms are one-dimensional arrays with different shapes, and Numpy is jealous of its broadcasting rules.  Instead, we have to resample on the grid `S`, that spans `x` and `y`
+
+	g = Field(x)[S] + Field(y)[S]
+	
+Subscripting a `Field` with a `Grid` causes the field to be interpolated on the points of the grid.
 
 FIXME You can't do S.W() on a low-rank grid, instead do do S.through(point).W()
 
@@ -157,7 +169,7 @@ other components*axis components*sample points.
 
 So, for example, samples of the gradient of the wavefunction of a spin 1/2 particle on a 4*5*6 grid would be stored in an array of shape 2*3*4*5*6.  The 2 is the spin components, and the 3 is the x, y and z components of the gradient vector.
 
-TODO Broadcasting in `Field` can be smarter than in `ndarray`, because axes can be identified in common coordinates.  The usual broadcasting rules can apply to array fields.
+TODO Broadcasting in `Field` can be smarter than in `ndarray`, because axes can be identified in common coordinates.  The usual broadcasting rules can apply to array fields.  The standard broadcasting behaviour seems to be hard coded into numpy ufuncs, so this is simply too complicated to do in Python.  It will have to wait for the Fielab language.
 
 
 Sampling
@@ -291,9 +303,11 @@ The bounds of a field extend by half a grid step past each point, forming a box 
 Idea: Field is an abstract superclass, with subclasses for different representations, such as a sampled field and its fourier coefficients.  All of these record the bounds of the field, which, along with the grid of wavenumbers, allow the sampling grid to be reconstructed.
 
 
-Limitations of Python
+Limitations imposed by Python
 ---
 
-At some point, I might extend this library to a language.  Among other things, that would allow the following limitations of Python to be overcome:
+This is a set of notes on limitations of Python that I've run into.
 
-Only brackets can take slice notation, so we have somewhat ugly methods sampled() and setsamples().  The language would use parentheses for these, where the index is a grid or the assigned value a field, and would use brackets for indices.  This is consistent with function calls: exp(x) can be read either as "the values of the function exp on the grid x" or "the field exp interpolated on the grid x", but these are the same thing.  It isn't clear that indirect interpolation, f(x) where f and x are both fields, is generally useful.
+There is no easy way to override the way `ufunc` broadcasts over arrays.  Since `Grid` knows the geometry, in principle it could figure out which axes are aligned and which are orthogonal.  In practice, it isn't too much work to resample on a grid that spans everything.  Instead of `a + b`, we can say `a[R] + b[R]`.  This statisfies Python's taste for explicitness.
+
+It would be nice for `sin(x)` to be a `Field` when `x` is a `Grid`.  The `__array__` special method comes tantalisingly close, but there's no way to preserve the `Field` subclass.  This just adds some line noise, with sin(Field(x)).

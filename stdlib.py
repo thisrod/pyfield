@@ -4,11 +4,11 @@
 
 from numpy import \
 	abs, amax, amin, all, allclose, arange, argmax, around, array, asarray, ascontiguousarray, \
-	ceil, concatenate, diag, diagflat, diagonal, dot, empty, eye, \
+	ceil, concatenate, cumsum, diag, diagflat, diagonal, dot, empty, eye, \
 	floor, indices, inf, isnan, linspace, load, log, log10, logspace, \
 	logical_not, logical_or, \
 	mean, meshgrid, nan, ndarray, newaxis, nonzero, \
-	ones, pi, prod, ptp, \
+	ones, outer, pi, prod, ptp, remainder, \
 	sign, sqrt, squeeze, tensordot, zeros, \
 	exp, sin, cos, tan
 from numpy.random import rand, randn, seed
