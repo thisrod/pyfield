@@ -3,11 +3,6 @@ Field library
 
 by Rodney E. S. Polkinghorne
 
-	subscripting a grid with a grid (sample coordinate field)
-	does this work with general bases?
-	indexing lvalues with masks
-	identifying a grid with a field where coefficents equal coordinates
-
 A field is a scalar, vector or tensor quantity that depends on position and time.  This Python library exports a `SampledField` type, being an `ndarray` containing samples of an array-valued quantity, that also records the points at which the samples were taken.  These points form a rectangular grid in R<sup>n</sup>.  Such an array can integrate, differentiate and Fourier transform itself, generate samples of white noise at its points, and so on.  Other representations, such as `SpectralField`, represent the same data in different ways.
 
 The classes can be regarded as expansions of the same field over different bases.  A `SampledField` expands over sinc functions, a `SpectralField` expands over complex exponentials, and so on.  These bases are indexed by a `Grid`.
