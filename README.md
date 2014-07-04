@@ -236,6 +236,12 @@ The algorithm to do this is as follows.  The target of the assignment, the field
 In the case that the grids coincide, this reduces to assignment.  There are some other desirable properties we should investigate.  Does setting samples on parts of a field commute, when the bounds of those parts don't overlap?  Also, an array of results can be constructed by adding slices at integration timesteps to an accumulator field with a larger step.  Does assigning the slices to the accumulator do the same thing, regardless of its initial value?
 
 
+Things to change
+---
+
+Fields and grids should have `label` and `units` elements, for use in graph axes, filenames and so on.  Perhaps `symbol` too.
+
+
 History and motivation
 ---
 
